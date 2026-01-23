@@ -68,4 +68,4 @@ Users can easily record, organize, and listen to audio recordings with a simple,
 | Button in list + modal display | Consistent with existing UI pattern, clear user flow | — Pending |
 
 ---
-*Last updated: 2026-01-23 after initialization*
+*Last updated: 2026-01-23 after roadmap creation*
