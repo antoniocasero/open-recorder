@@ -5,12 +5,12 @@ use async_openai::{
         AudioResponseFormat,
         CreateTranscriptionRequestArgs,
         TimestampGranularity,
-        TranscriptionWord,
     },
     Client,
 };
+use tauri_plugin_http::reqwest::Error as ReqwestError;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
+use std::io::ErrorKind;
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -29,29 +29,57 @@ pub struct Transcript {
     pub language: String,
 }
 
+fn is_supported_format(path: &PathBuf) -> bool {
+    if let Some(ext) = path.extension() {
+        let ext = ext.to_string_lossy().to_lowercase();
+        matches!(ext.as_str(), "mp3" | "m4a" | "wav" | "flac" | "ogg" | "aac")
+    } else {
+        false
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum TranscriptionError {
     #[error("Missing API key: OPENAI_API_KEY environment variable not set")]
     MissingApiKey,
-    #[error("Failed to read file: {0}")]
-    FileError(String),
+    #[error("File not found: {0}")]
+    FileNotFound(String),
+    #[error("File too large: {0} (max 25 MB)")]
+    FileTooLarge(String),
+    #[error("Unsupported audio format. Supported: mp3, m4a, wav, flac, ogg, aac")]
+    UnsupportedFormat,
     #[error("OpenAI API error: {0}")]
     ApiError(String),
-    #[error("Invalid request: {0}")]
-    RequestError(String),
+    #[error("Network error: {0}")]
+    NetworkError(String),
+    #[error("Transcription failed: {0}")]
+    TranscriptionFailed(String),
     #[error("Failed to save transcript: {0}")]
     SaveError(String),
+    #[error("File error: {0}")]
+    FileError(String),
+    #[error("Invalid request: {0}")]
+    RequestError(String),
 }
 
 impl From<std::io::Error> for TranscriptionError {
     fn from(err: std::io::Error) -> Self {
-        TranscriptionError::FileError(err.to_string())
+        match err.kind() {
+            ErrorKind::NotFound => TranscriptionError::FileNotFound(err.to_string()),
+            _ => TranscriptionError::FileError(err.to_string()),
+        }
     }
 }
 
 impl From<async_openai::error::OpenAIError> for TranscriptionError {
     fn from(err: async_openai::error::OpenAIError) -> Self {
         TranscriptionError::ApiError(err.to_string())
+    }
+}
+
+impl From<ReqwestError> for TranscriptionError {
+    fn from(err: ReqwestError) -> Self {
+        TranscriptionError::NetworkError(err.to_string())
     }
 }
 
@@ -70,9 +98,12 @@ async fn transcribe_audio_inner(path: PathBuf) -> Result<Transcript, Transcripti
     // Validate file size (25 MB limit)
     let metadata = std::fs::metadata(&path)?;
     if metadata.len() > 25 * 1024 * 1024 {
-        return Err(TranscriptionError::FileError(
-            "File size exceeds 25 MB limit".to_string(),
-        ));
+        return Err(TranscriptionError::FileTooLarge(path.display().to_string()));
+    }
+
+    // Validate file extension
+    if !is_supported_format(&path) {
+        return Err(TranscriptionError::UnsupportedFormat);
     }
     
 
