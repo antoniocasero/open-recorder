@@ -5,6 +5,7 @@ import { RecordingsList } from './RecordingsList'
 import { Player } from './Player'
 import { Transcription } from './Transcription'
 import { Settings, RefreshCw } from 'lucide-react'
+import { Toaster } from 'react-hot-toast'
 import { pickFolder, scanFolderForAudio } from '@/lib/fs/commands'
 import { getLastFolder, setLastFolder } from '@/lib/fs/config'
 import { AudioItem } from '@/lib/types'
@@ -17,6 +18,23 @@ export function Dashboard() {
   useEffect(() => {
     loadLastFolder()
   }, [])
+
+  // Mock recording for development testing
+  useEffect(() => {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development' && recordings.length === 0) {
+      console.log('[DEV] Adding mock recording for testing')
+      const mockRecording: AudioItem = {
+        id: 'mock-1',
+        name: 'sample-recording.mp3',
+        path: '/path/to/sample.mp3',
+        size: 1024 * 1024 * 5, // 5 MB
+        mtime: Date.now(),
+        duration: 120 // 2 minutes
+      }
+      setRecordings([mockRecording])
+      setSelectedId('mock-1')
+    }
+  }, [recordings.length])
 
   async function loadLastFolder() {
     const lastPath = await getLastFolder()
@@ -94,6 +112,7 @@ export function Dashboard() {
 
       {/* Transcription */}
       <Transcription />
+      <Toaster position="bottom-right" />
     </div>
   )
 }
