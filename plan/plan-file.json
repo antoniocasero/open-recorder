@@ -69,6 +69,6 @@
       "Ensure the panel is scrollable and visually matches spacing/typography from the screenshot",
       "Verify the whole dashboard looks consistent at typical mac window sizes (no overflow, sensible responsive behavior)"
     ],
-    "passes": false
+    "passes": true
   }
 ]

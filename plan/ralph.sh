@@ -12,7 +12,7 @@ fi
 # This prompt is basic, we'll expand it later.
 for ((i=1; i<=$1; i++)); do
 result="$(
-  kiro-cli chat --trust-all-tools --no-interactive "$(cat <<PROMPT
+  kiro-cli chat  "$(cat <<PROMPT
 Below are three project files. Use them as source of truth.
 
 --- plan-file.json ---
