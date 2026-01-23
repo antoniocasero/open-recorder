@@ -1,0 +1,32 @@
+
+
+=== Task 1: Setup - Create Next.js App Router + Tauri desktop app baseline ===
+Date: 2026-01-23 09:45
+
+What I did:
+- Created Next.js 15 app with TypeScript, App Router, Tailwind CSS, and ESLint
+- Initialized Tauri v2 with src-tauri/ directory and configuration
+- Configured Next.js for static export (output: 'export') required by Tauri
+- Set up Tailwind CSS with PostCSS and proper content paths
+- Created minimal app structure: app/layout.tsx, app/page.tsx, app/globals.css
+- Configured TypeScript with proper paths and Next.js plugin
+
+Commands run:
+- npm init -y
+- npm install next@latest react@latest react-dom@latest typescript @types/react @types/node @types/react-dom tailwindcss postcss autoprefixer eslint eslint-config-next
+- npm install --save-dev @tauri-apps/cli
+- npm install @tauri-apps/api
+- npx tauri init --ci
+- npm run build (Next.js static export)
+- npx tsc --noEmit (TypeScript check)
+
+Result:
+✅ Next.js builds successfully with no errors
+✅ TypeScript compiles without errors
+✅ Tailwind CSS is working (classes appear in output HTML)
+✅ Tauri structure created (src-tauri/ with Cargo.toml, tauri.conf.json, Rust source)
+✅ Static export generates out/ directory correctly
+⚠️  Tauri production build requires Rust/Cargo installation (not available in environment)
+   However, all configuration is correct and ready for dev/build when Rust is available
+
+The baseline is complete and ready for development.

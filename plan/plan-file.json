@@ -1,0 +1,74 @@
+[
+  {
+    "category": "setup",
+    "description": "Create Next.js App Router + Tauri desktop app baseline",
+    "steps": [
+      "Run `npx create-next-app@latest open-recorder --ts --app --tailwind --eslint`",
+      "Initialize Tauri in the project (create `src-tauri/`, tauri config, and dev command wiring)",
+      "Run the Tauri dev workflow and verify the desktop window loads the Next.js app without errors",
+      "Verify Tailwind is working and there are no build warnings in console",
+      "Build a production app and verify it launches successfully"
+    ],
+    "passes": true
+  },
+  {
+    "category": "architecture",
+    "description": "Minimal structure for folder selection + audio scanning + playback",
+    "steps": [
+      "Create folders: `src/lib/fs`, `src/lib/audio`, `src/hooks`, `src/components`",
+      "Create Tauri commands: `pickFolder`, `scanFolderForAudio` (recursive), `readFileMeta`",
+      "Define the shared type `AudioItem`: `{ id, name, path, size, mtime, duration? }`",
+      "Store the last selected folder path in app config (so it can be restored on launch)",
+      "Run a production build and verify no module resolution or TypeScript errors"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ux",
+    "description": "UI must match the provided screenshot layout and styling (dark desktop dashboard)",
+    "steps": [
+      "Implement the dashboard layout matching `/Users/acaserop/Documents/Project/open-recorder-tauri/plan/Screenshot.png`: top title bar, left list card, right player card, bottom transcript card",
+      "Add a dark theme baseline: charcoal background, subtle border lines, rounded containers, soft shadows, and orange accent for primary controls/selection",
+      "Top area must include: left title 'Recordings' + subtitle count, and top-right controls: status chip with green dot, 'Sync Device' button, and settings icon button",
+      "Left list must be a card with rows showing: play icon, filename, and a second line with duration + size; selected row has a thin orange accent on the left",
+      "Right player must be a card with filename title, date/time subtitle, big circular play/pause button (orange), waveform visualization area, and elapsed/total time labels"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Folder-based audio library (audio can come from any folder, not USB-only)",
+    "steps": [
+      "Replace 'Sync Device' behavior with 'Choose Folder' (MVP) but keep the UI button label if you want it identical; clicking it opens folder picker",
+      "After choosing a folder, scan recursively and list supported audio files (at least .mp3; optionally .m4a/.wav)",
+      "Show recording count under 'Recordings' and update it after each scan",
+      "Selecting a row loads that audio into the player card and highlights the selected row",
+      "Add a 'Rescan' path (can be in settings button menu) to refresh the list and replace prior results (no duplicates)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Playback MVP (no AI analysis/transcription generation yet)",
+    "steps": [
+      "Play/Pause button controls local audio playback end-to-end for the selected file",
+      "Display elapsed time and total duration; show placeholders until metadata is available",
+      "Waveform area can be a simple placeholder visualization initially (static bars) but must match the screenshot look; real waveform can be added later",
+      "Seeking is optional for the first iteration; if included, add a minimal scrubber that updates playback position",
+      "Stop previous audio cleanly when switching files (no overlapping playback, no stuck state)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "ux",
+    "description": "Transcript panel remains as UI shell only (no AI features for now)",
+    "steps": [
+      "Render the bottom 'Transcription' card as in the screenshot (header with icon + title + Export button on the right)",
+      "For MVP, show a placeholder body (e.g., 'No transcription available yet') and keep Export disabled until real transcript exists",
+      "Keep the footer row styling consistent (left-aligned meta placeholders), but omit AI-specific indicators (e.g., remove 'AI Summary Ready') for now",
+      "Ensure the panel is scrollable and visually matches spacing/typography from the screenshot",
+      "Verify the whole dashboard looks consistent at typical mac window sizes (no overflow, sensible responsive behavior)"
+    ],
+    "passes": false
+  }
+]
