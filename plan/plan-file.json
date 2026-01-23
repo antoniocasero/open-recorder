@@ -57,7 +57,7 @@
       "Seeking is optional for the first iteration; if included, add a minimal scrubber that updates playback position",
       "Stop previous audio cleanly when switching files (no overlapping playback, no stuck state)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ux",
