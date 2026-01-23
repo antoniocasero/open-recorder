@@ -1,9 +1,11 @@
 use async_openai::{
     config::OpenAIConfig,
-    types::{
+    error::OpenAIError,
+    types::audio::{
+        AudioResponseFormat,
         CreateTranscriptionRequestArgs,
         TimestampGranularity,
-        TranscriptionResponseFormat,
+        TranscriptionWord,
     },
     Client,
 };
@@ -61,7 +63,7 @@ pub async fn transcribe_audio(path: PathBuf) -> Result<Transcript, String> {
 async fn transcribe_audio_inner(path: PathBuf) -> Result<Transcript, TranscriptionError> {
     let api_key = std::env::var("OPENAI_API_KEY")
         .map_err(|_| TranscriptionError::MissingApiKey)?;
-    
+
     let config = OpenAIConfig::new().with_api_key(&api_key);
     let client = Client::with_config(config);
     
@@ -73,20 +75,20 @@ async fn transcribe_audio_inner(path: PathBuf) -> Result<Transcript, Transcripti
         ));
     }
     
-    let file = File::open(&path)?;
+
     
     let request = CreateTranscriptionRequestArgs::default()
-        .file(file)
+        .file(&path)
         .model("gpt-4o-transcribe")
-        .response_format(TranscriptionResponseFormat::VerboseJson)
+        .response_format(AudioResponseFormat::VerboseJson)
         .timestamp_granularities(&[TimestampGranularity::Word])
         .build()
-        .map_err(|e| TranscriptionError::RequestError(e.to_string()))?;
+        .map_err(|e: OpenAIError| TranscriptionError::RequestError(e.to_string()))?;
     
     let response = client
         .audio()
-        .transcriptions()
-        .create(request)
+        .transcription()
+        .create_verbose_json(request)
         .await?;
     
     // Extract words from response (words field is available in verbose_json)
@@ -109,7 +111,7 @@ async fn transcribe_audio_inner(path: PathBuf) -> Result<Transcript, Transcripti
     Ok(Transcript {
         text: response.text,
         words,
-        duration: response.duration.unwrap_or(0.0),
-        language: response.language.unwrap_or_else(|| "unknown".to_string()),
+        duration: response.duration,
+        language: response.language,
     })
 }

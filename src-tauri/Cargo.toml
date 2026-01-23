@@ -28,7 +28,7 @@ tauri-plugin-dialog = "2"
 tauri-plugin-http = "2"
 futures = "0.3"
 md5 = "0.7"
-async-openai = "0.32.3"
+async-openai = { version = "0.32.3", features = ["audio"] }
 tokio = { version = "1.49", features = ["full"] }
 thiserror = "2.0"
 tracing = "0.1"

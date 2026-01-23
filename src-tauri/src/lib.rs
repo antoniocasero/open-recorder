@@ -3,6 +3,8 @@ use std::fs;
 use std::path::PathBuf;
 use tauri_plugin_http;
 
+mod commands;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AudioItem {
     id: String,
@@ -119,7 +121,8 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
         pick_folder,
         scan_folder_for_audio,
-        read_file_meta
+        read_file_meta,
+        commands::transcription::transcribe_audio
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
