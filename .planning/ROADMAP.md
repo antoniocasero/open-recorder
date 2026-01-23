@@ -37,7 +37,7 @@ Plans:
 - [x] 01-01-PLAN.md — Setup dependencies and types
 - [ ] 01-02-PLAN.md — Backend transcription command
 - [x] 01-03-PLAN.md — Frontend command wrapper and button
-- [ ] 01-04-PLAN.md — Transcript display and notifications
+- [x] 01-04-PLAN.md — Transcript display and notifications
 - [ ] 01-05-PLAN.md — Error handling and verification
 
 ### Phase 2: Transcript Management & Enhancements
@@ -77,6 +77,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Transcription MVP | 3/5 | In progress | - |
+| 1. Transcription MVP | 4/5 | In progress | - |
 | 2. Transcript Management & Enhancements | 0/TBD | Not started | - |
 | 3. Advanced Features & Scalability | 0/TBD | Not started | - |
