@@ -8,13 +8,6 @@
   "permissions": [
     "core:default",
     "store:default",
-    {
-      "identifier": "http:allow-openai",
-      "allow": [
-        {
-          "url": "https://api.openai.com"
-        }
-      ]
-    }
+    "http:allow-fetch"
   ]
 }

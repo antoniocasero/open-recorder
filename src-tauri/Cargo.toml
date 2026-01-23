@@ -25,6 +25,7 @@ tauri = { version = "2.9.5", features = ["protocol-asset"] }
 tauri-plugin-log = "2"
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-http = "2"
 futures = "0.3"
 md5 = "0.7"
 async-openai = "0.32.3"

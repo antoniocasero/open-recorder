@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use tauri::Manager;
+use tauri_plugin_http;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AudioItem {
@@ -14,13 +14,22 @@ pub struct AudioItem {
 }
 
 #[tauri::command]
-fn pick_folder() -> Result<String, String> {
-    use tauri::api::dialog::blocking::FileDialogBuilder;
+async fn pick_folder(app: tauri::AppHandle) -> Result<String, String> {
+    use tauri_plugin_dialog::DialogExt;
+    use futures::channel::oneshot;
     
-    FileDialogBuilder::new()
-        .pick_folder()
-        .map(|p| p.to_string_lossy().to_string())
-        .ok_or_else(|| "No folder selected".to_string())
+    let (tx, rx) = oneshot::channel();
+    
+    app.dialog()
+        .file()
+        .pick_folder(move |path| {
+            let result = path
+                .map(|p| p.to_string())
+                .ok_or_else(|| "No folder selected".to_string());
+            let _ = tx.send(result);
+        });
+    
+    rx.await.map_err(|_| "Dialog cancelled".to_string())?
 }
 
 #[tauri::command]
@@ -95,6 +104,8 @@ fn read_file_meta(file_path: String) -> Result<AudioItem, String> {
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_store::Builder::new().build())
+    .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_http::init())
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
