@@ -115,3 +115,31 @@ async fn transcribe_audio_inner(path: PathBuf) -> Result<Transcript, Transcripti
         language: response.language,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[tokio::test]
+    async fn test_transcribe_audio_missing_api_key() {
+        // Temporarily remove API key if set
+        std::env::remove_var("OPENAI_API_KEY");
+        
+        let result = transcribe_audio_inner(PathBuf::from("nonexistent.mp3")).await;
+        assert!(matches!(result, Err(TranscriptionError::MissingApiKey)));
+    }
+    
+    #[tokio::test]
+    async fn test_transcribe_audio_file_not_found() {
+        // Set a dummy API key to bypass missing api key error
+        std::env::set_var("OPENAI_API_KEY", "dummy_key");
+        
+        let result = transcribe_audio_inner(PathBuf::from("nonexistent.mp3")).await;
+        // Should be FileError because file doesn't exist
+        assert!(matches!(result, Err(TranscriptionError::FileError(_))));
+        
+        // Clean up
+        std::env::remove_var("OPENAI_API_KEY");
+    }
+}
