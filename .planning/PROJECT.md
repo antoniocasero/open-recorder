@@ -30,6 +30,8 @@ Users can easily record, organize, and listen to audio recordings with a simple,
 - [ ] **TRAN-06**: Notification toast appears when transcription completes
 - [ ] **TRAN-07**: API key provided via environment variable (`OPENAI_API_KEY`)
 - [ ] **TRAN-08**: Error handling for missing API key, network errors, unsupported formats
+- [ ] **TRAN-09**: Support for common audio formats (mp3, m4a, wav, etc.)
+- [ ] **TRAN-10**: Auto language detection via Whisper API
 
 ### Out of Scope
 
