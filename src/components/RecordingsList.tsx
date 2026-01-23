@@ -99,23 +99,40 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
                     <HardDrive className="w-3 h-3" />
                     {formatSize(recording.size)}
                   </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleTranscribe(recording)
-                    }}
-                    disabled={transcriptionStates[recording.id]?.status === 'loading'}
-                    className="flex items-center gap-1 ml-auto px-2 py-1 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {transcriptionStates[recording.id]?.status === 'loading' ? (
-                      <Loader className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <FileText className="w-3 h-3" />
-                    )}
-                    <span className="text-xs">
-                      {transcriptionStates[recording.id]?.status === 'loading' ? 'Transcribing...' : 'Transcribe'}
-                    </span>
-                  </button>
+                  {transcriptionStates[recording.id]?.status === 'error' ? (
+                    <div className="flex items-center gap-1 ml-auto">
+                      <span className="text-xs text-red-400">
+                        {transcriptionStates[recording.id].error?.substring(0, 30)}…
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleTranscribe(recording)
+                        }}
+                        className="px-2 py-1 text-xs bg-red-900/30 border border-red-800 rounded hover:bg-red-900/50"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleTranscribe(recording)
+                      }}
+                      disabled={transcriptionStates[recording.id]?.status === 'loading'}
+                      className="flex items-center gap-1 ml-auto px-2 py-1 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {transcriptionStates[recording.id]?.status === 'loading' ? (
+                        <Loader className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <FileText className="w-3 h-3" />
+                      )}
+                      <span className="text-xs">
+                        {transcriptionStates[recording.id]?.status === 'loading' ? 'Transcribing...' : 'Transcribe'}
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
