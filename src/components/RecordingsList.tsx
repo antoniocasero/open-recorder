@@ -1,22 +1,44 @@
 'use client'
 
 import { Play, Clock, HardDrive } from 'lucide-react'
+import { AudioItem } from '@/lib/types'
 
-const mockRecordings = [
-  { id: '1', name: 'Weekly Team Sync.mp3', duration: '45:20', size: '24.5 MB', selected: true },
-  { id: '2', name: 'Product Roadmap.mp3', duration: '1:15:00', size: '42.1 MB', selected: false },
-  { id: '3', name: 'Client Interview.mp3', duration: '22:15', size: '12.8 MB', selected: false },
-]
+interface RecordingsListProps {
+  recordings: AudioItem[]
+  selectedId: string | null
+  onSelect: (id: string) => void
+}
 
-export function RecordingsList() {
+function formatDuration(seconds?: number): string {
+  if (!seconds) return '--:--'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function formatSize(bytes: number): string {
+  const mb = bytes / (1024 * 1024)
+  return `${mb.toFixed(1)} MB`
+}
+
+export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsListProps) {
+  if (recordings.length === 0) {
+    return (
+      <div className="bg-[#252525] rounded-lg border border-[#333] p-4 flex items-center justify-center h-[400px]">
+        <p className="text-gray-400 text-sm">No recordings found. Click "Sync Device" to choose a folder.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-[#252525] rounded-lg border border-[#333] p-4">
       <div className="space-y-2">
-        {mockRecordings.map((recording) => (
+        {recordings.map((recording) => (
           <div
             key={recording.id}
+            onClick={() => onSelect(recording.id)}
             className={`relative flex items-start gap-3 p-3 rounded-md cursor-pointer transition-colors ${
-              recording.selected
+              recording.id === selectedId
                 ? 'bg-[#2a2a2a] border-l-2 border-l-orange-500'
                 : 'hover:bg-[#2a2a2a]'
             }`}
@@ -27,11 +49,11 @@ export function RecordingsList() {
               <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  {recording.duration}
+                  {formatDuration(recording.duration)}
                 </span>
                 <span className="flex items-center gap-1">
                   <HardDrive className="w-3 h-3" />
-                  {recording.size}
+                  {formatSize(recording.size)}
                 </span>
               </div>
             </div>

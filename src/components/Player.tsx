@@ -1,13 +1,44 @@
 'use client'
 
 import { Pause } from 'lucide-react'
+import { AudioItem } from '@/lib/types'
 
-export function Player() {
+interface PlayerProps {
+  recording?: AudioItem
+}
+
+function formatDuration(seconds?: number): string {
+  if (!seconds) return '--:--'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function formatDate(timestamp: number): string {
+  const date = new Date(timestamp * 1000)
+  const today = new Date()
+  const isToday = date.toDateString() === today.toDateString()
+  
+  if (isToday) {
+    return `Today at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+  }
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+export function Player({ recording }: PlayerProps) {
+  if (!recording) {
+    return (
+      <div className="bg-[#252525] rounded-lg border border-[#333] p-6 flex items-center justify-center h-[400px]">
+        <p className="text-gray-400 text-sm">Select a recording to play</p>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-[#252525] rounded-lg border border-[#333] p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold">Weekly Team Sync.mp3</h2>
-        <p className="text-sm text-gray-400 mt-1">Today at 10:00 AM</p>
+        <h2 className="text-xl font-semibold">{recording.name}</h2>
+        <p className="text-sm text-gray-400 mt-1">{formatDate(recording.mtime)}</p>
       </div>
 
       <div className="flex flex-col items-center gap-6">
@@ -35,8 +66,8 @@ export function Player() {
 
         {/* Time */}
         <div className="w-full flex justify-between text-sm text-gray-400">
-          <span>12:45</span>
-          <span>45:20</span>
+          <span>0:00</span>
+          <span>{formatDuration(recording.duration)}</span>
         </div>
       </div>
     </div>

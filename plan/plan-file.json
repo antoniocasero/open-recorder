@@ -45,7 +45,7 @@
       "Selecting a row loads that audio into the player card and highlights the selected row",
       "Add a 'Rescan' path (can be in settings button menu) to refresh the list and replace prior results (no duplicates)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
