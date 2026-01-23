@@ -1,7 +1,10 @@
 'use client'
 
-import { Play, Clock, HardDrive } from 'lucide-react'
+import { Play, Clock, HardDrive, Loader, FileText } from 'lucide-react'
+import { useState } from 'react'
 import { AudioItem } from '@/lib/types'
+import { transcribeAudio } from '@/lib/transcription/commands'
+import { TranscriptionState } from '@/lib/transcription/types'
 
 interface RecordingsListProps {
   recordings: AudioItem[]
@@ -22,6 +25,29 @@ function formatSize(bytes: number): string {
 }
 
 export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsListProps) {
+  const [transcriptionStates, setTranscriptionStates] = useState<Record<string, TranscriptionState>>({})
+
+  const handleTranscribe = async (recording: AudioItem) => {
+    setTranscriptionStates(prev => ({
+      ...prev,
+      [recording.id]: { status: 'loading' }
+    }))
+    
+    try {
+      const transcript = await transcribeAudio(recording.path)
+      setTranscriptionStates(prev => ({
+        ...prev,
+        [recording.id]: { status: 'success', transcript }
+      }))
+      // Toast will be added in a later plan
+    } catch (error) {
+      setTranscriptionStates(prev => ({
+        ...prev,
+        [recording.id]: { status: 'error', error: error instanceof Error ? error.message : String(error) }
+      }))
+    }
+  }
+
   if (recordings.length === 0) {
     return (
       <div className="bg-[#252525] rounded-lg border border-[#333] p-4 flex items-center justify-center h-[400px]">
@@ -55,6 +81,23 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
                   <HardDrive className="w-3 h-3" />
                   {formatSize(recording.size)}
                 </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleTranscribe(recording)
+                  }}
+                  disabled={transcriptionStates[recording.id]?.status === 'loading'}
+                  className="flex items-center gap-1 ml-auto px-2 py-1 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {transcriptionStates[recording.id]?.status === 'loading' ? (
+                    <Loader className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <FileText className="w-3 h-3" />
+                  )}
+                  <span className="text-xs">
+                    {transcriptionStates[recording.id]?.status === 'loading' ? 'Transcribing...' : 'Transcribe'}
+                  </span>
+                </button>
               </div>
             </div>
           </div>
