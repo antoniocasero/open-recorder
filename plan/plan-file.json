@@ -21,7 +21,7 @@
       "Store the last selected folder path in app config (so it can be restored on launch)",
       "Run a production build and verify no module resolution or TypeScript errors"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "ux",
