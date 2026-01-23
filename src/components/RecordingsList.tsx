@@ -87,7 +87,7 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
                     handleTranscribe(recording)
                   }}
                   disabled={transcriptionStates[recording.id]?.status === 'loading'}
-                  className="flex items-center gap-1 ml-auto px-2 py-1 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 ml-auto px-2 py-1 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {transcriptionStates[recording.id]?.status === 'loading' ? (
                     <Loader className="w-3 h-3 animate-spin" />
