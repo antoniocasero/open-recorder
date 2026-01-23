@@ -66,22 +66,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TRAN-01 | Pending | Pending |
-| TRAN-02 | Pending | Pending |
-| TRAN-03 | Pending | Pending |
-| TRAN-04 | Pending | Pending |
-| TRAN-05 | Pending | Pending |
-| TRAN-06 | Pending | Pending |
-| TRAN-07 | Pending | Pending |
-| TRAN-08 | Pending | Pending |
-| TRAN-09 | Pending | Pending |
-| TRAN-10 | Pending | Pending |
+| TRAN-01 | Phase 1 | Pending |
+| TRAN-02 | Phase 1 | Pending |
+| TRAN-03 | Phase 1 | Pending |
+| TRAN-04 | Phase 1 | Pending |
+| TRAN-05 | Phase 1 | Pending |
+| TRAN-06 | Phase 1 | Pending |
+| TRAN-07 | Phase 1 | Pending |
+| TRAN-08 | Phase 1 | Pending |
+| TRAN-09 | Phase 1 | Pending |
+| TRAN-10 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 10 total
-- Mapped to phases: 0
-- Unmapped: 10 ⚠️
+- Mapped to phases: 10
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-01-23*
-*Last updated: 2026-01-23 after initial definition*
+*Last updated: 2026-01-23 after roadmap creation*
