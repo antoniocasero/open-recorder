@@ -31,10 +31,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   6. User gets clear error messages for missing API key, network issues, or unsupported formats
   7. User can transcribe common audio formats (mp3, m4a, wav)
   8. App automatically detects language of audio for transcription
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 01-01: TBD
+- [ ] 01-01-PLAN.md — Setup dependencies and types
+- [ ] 01-02-PLAN.md — Backend transcription command
+- [ ] 01-03-PLAN.md — Frontend command wrapper and button
+- [ ] 01-04-PLAN.md — Transcript display and notifications
+- [ ] 01-05-PLAN.md — Error handling and verification
 
 ### Phase 2: Transcript Management & Enhancements
 **Goal**: Enhance transcription with batch processing, editing, search, and export capabilities
@@ -73,6 +77,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Transcription MVP | 0/TBD | Not started | - |
+| 1. Transcription MVP | 0/5 | Not started | - |
 | 2. Transcript Management & Enhancements | 0/TBD | Not started | - |
 | 3. Advanced Features & Scalability | 0/TBD | Not started | - |
