@@ -33,7 +33,7 @@
       "Left list must be a card with rows showing: play icon, filename, and a second line with duration + size; selected row has a thin orange accent on the left",
       "Right player must be a card with filename title, date/time subtitle, big circular play/pause button (orange), waveform visualization area, and elapsed/total time labels"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
