@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 5 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Setup dependencies and types
+- [x] 01-01-PLAN.md — Setup dependencies and types
 - [ ] 01-02-PLAN.md — Backend transcription command
 - [ ] 01-03-PLAN.md — Frontend command wrapper and button
 - [ ] 01-04-PLAN.md — Transcript display and notifications
@@ -77,6 +77,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Transcription MVP | 0/5 | Not started | - |
+| 1. Transcription MVP | 1/5 | In progress | - |
 | 2. Transcript Management & Enhancements | 0/TBD | Not started | - |
 | 3. Advanced Features & Scalability | 0/TBD | Not started | - |
