@@ -39,18 +39,33 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
   }
 
   const handleExportSRT = () => {
-    const content = toSRT(transcript)
-    downloadFile(content, `transcript_${Date.now()}.srt`)
+    try {
+      const content = toSRT(transcript)
+      downloadFile(content, `transcript_${Date.now()}.srt`)
+    } catch (error) {
+      console.error('Failed to export SRT:', error)
+      toast.error(`Failed to export SRT: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
   const handleExportVTT = () => {
-    const content = toVTT(transcript)
-    downloadFile(content, `transcript_${Date.now()}.vtt`)
+    try {
+      const content = toVTT(transcript)
+      downloadFile(content, `transcript_${Date.now()}.vtt`)
+    } catch (error) {
+      console.error('Failed to export VTT:', error)
+      toast.error(`Failed to export VTT: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
   const handleExportJSON = () => {
-    const content = toJSON(transcript)
-    downloadFile(content, `transcript_${Date.now()}.json`)
+    try {
+      const content = toJSON(transcript)
+      downloadFile(content, `transcript_${Date.now()}.json`)
+    } catch (error) {
+      console.error('Failed to export JSON:', error)
+      toast.error(`Failed to export JSON: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
   const handleEdit = () => {
