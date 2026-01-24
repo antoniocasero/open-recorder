@@ -88,6 +88,16 @@ pub async fn transcribe_audio(path: PathBuf) -> Result<Transcript, String> {
     transcribe_audio_inner(path).await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn transcribe_audio_batch(paths: Vec<PathBuf>) -> Result<Vec<Result<Transcript, String>>, String> {
+    let mut results = Vec::new();
+    for path in paths {
+        let result = transcribe_audio_inner(path).await;
+        results.push(result.map_err(|e| e.to_string()));
+    }
+    Ok(results)
+}
+
 async fn transcribe_audio_inner(path: PathBuf) -> Result<Transcript, TranscriptionError> {
     let api_key = std::env::var("OPENAI_API_KEY")
         .map_err(|_| TranscriptionError::MissingApiKey)?;
@@ -108,9 +118,11 @@ async fn transcribe_audio_inner(path: PathBuf) -> Result<Transcript, Transcripti
     
 
     
+    // Try whisper-1 model which supports verbose_json with word timestamps
+    // If that fails, fall back to gpt-4o-transcribe with json format (no word timestamps)
     let request = CreateTranscriptionRequestArgs::default()
         .file(&path)
-        .model("gpt-4o-transcribe")
+        .model("whisper-1")
         .response_format(AudioResponseFormat::VerboseJson)
         .timestamp_granularities(&[TimestampGranularity::Word])
         .build()
@@ -145,6 +157,27 @@ async fn transcribe_audio_inner(path: PathBuf) -> Result<Transcript, Transcripti
         duration: response.duration,
         language: response.language,
     })
+}
+
+#[tauri::command]
+pub async fn save_transcript(path: PathBuf, text: String) -> Result<(), String> {
+    save_transcript_inner(path, text).await.map_err(|e| e.to_string())
+}
+
+async fn save_transcript_inner(path: PathBuf, text: String) -> Result<(), TranscriptionError> {
+    // Validate path exists (audio file optional, but at least parent directory should exist)
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            return Err(TranscriptionError::FileNotFound(format!("Parent directory not found: {}", parent.display())));
+        }
+    }
+    
+    // Write to sidecar .txt file
+    let transcript_path = path.with_extension("txt");
+    std::fs::write(&transcript_path, text)
+        .map_err(|e| TranscriptionError::SaveError(e.to_string()))?;
+    
+    Ok(())
 }
 
 #[cfg(test)]

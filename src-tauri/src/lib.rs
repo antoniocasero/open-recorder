@@ -104,6 +104,27 @@ fn read_file_meta(file_path: String) -> Result<AudioItem, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+  // Load environment variables from .env files
+  // Try multiple locations to find the project root where .env.local might be
+  
+  // Method 1: Try parent of CARGO_MANIFEST_DIR (project root)
+  // CARGO_MANIFEST_DIR points to src-tauri/ at compile time
+  let project_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent();
+  if let Some(root) = project_root {
+    let env_local = root.join(".env.local");
+    if env_local.exists() {
+      let _ = dotenv::from_path(&env_local);
+    }
+    let env_file = root.join(".env");
+    if env_file.exists() {
+      let _ = dotenv::from_path(&env_file);
+    }
+  }
+  
+  // Method 2: Try current working directory (fallback)
+  dotenv::dotenv().ok();
+  dotenv::from_filename(".env.local").ok();
+  
   tauri::Builder::default()
     .plugin(tauri_plugin_store::Builder::new().build())
     .plugin(tauri_plugin_dialog::init())
@@ -122,7 +143,8 @@ pub fn run() {
         pick_folder,
         scan_folder_for_audio,
         read_file_meta,
-        commands::transcription::transcribe_audio
+        commands::transcription::transcribe_audio,
+        commands::transcription::save_transcript
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
