@@ -76,12 +76,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRAN-08 | Phase 1 | Pending |
 | TRAN-09 | Phase 1 | Pending |
 | TRAN-10 | Phase 1 | Pending |
+| TRAN-11 | Phase 2 | Complete |
+| TRAN-12 | Phase 2 | Deferred |
+| TRAN-13 | Phase 2 | Complete |
+| TRAN-14 | Phase 2 | Complete |
+| TRAN-15 | Phase 2 | Complete |
+| TRAN-16 | Phase 2 | Complete |
 
 **Coverage:**
 - v1 requirements: 10 total
-- Mapped to phases: 10
-- Unmapped: 0 ✓
+- v2 requirements: 8 total
+- Mapped to phases: 16
+- Unmapped: 2 (TRAN-17, TRAN-18)
 
 ---
 *Requirements defined: 2026-01-23*
-*Last updated: 2026-01-23 after roadmap creation*
+*Last updated: 2026-01-24 after Phase 2 completion*
