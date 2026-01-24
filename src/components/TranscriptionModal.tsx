@@ -1,9 +1,9 @@
 'use client'
 
-import { X, Copy, Download, Edit, Save, XCircle, Loader, FileText, FileCode, Code } from 'lucide-react'
+import { X, Copy, Download, Edit, Save, XCircle, Loader, FileText, FileCode, Code, Sparkles } from 'lucide-react'
 import { Transcript } from '@/lib/transcription/types'
 import { useState } from 'react'
-import { saveTranscript } from '@/lib/transcription/commands'
+import { saveTranscript, summarizeTranscript } from '@/lib/transcription/commands'
 import { toSRT, toVTT, toJSON, downloadFile } from '@/lib/transcription/export'
 import toast from 'react-hot-toast'
 
@@ -19,6 +19,8 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
   const [editMode, setEditMode] = useState(false)
   const [editedText, setEditedText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [summary, setSummary] = useState('')
+  const [loadingSummary, setLoadingSummary] = useState(false)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(transcript.text)
@@ -109,6 +111,20 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
     }
   }
 
+  const handleSummarize = async () => {
+    setLoadingSummary(true)
+    try {
+      const result = await summarizeTranscript(transcript.text)
+      setSummary(result)
+      toast.success('Summary generated')
+    } catch (error) {
+      console.error('Failed to generate summary:', error)
+      toast.error(`Failed to generate summary: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setLoadingSummary(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-[#252525] rounded-lg border border-[#333] w-full max-w-2xl max-h-[80vh] flex flex-col">
@@ -158,8 +174,25 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
                {/* Plain text block */}
                <div className="mt-6 pt-4 border-t border-[#333]">
                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{transcript.text}</p>
-               </div>
-             </>
+                </div>
+
+                {summary && (
+                  <div className="mt-6 pt-4 border-t border-[#333]">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-semibold text-gray-300">AI Summary</h4>
+                      <button
+                        onClick={() => setSummary('')}
+                        className="text-xs text-gray-500 hover:text-gray-300"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="bg-[#2a2a2a] rounded border border-[#333] p-3">
+                      <p className="text-sm text-gray-300 whitespace-pre-wrap">{summary}</p>
+                    </div>
+                  </div>
+                )}
+              </>
            )}
          </div>
 
@@ -222,20 +255,32 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
                     <FileCode className="w-4 h-4" />
                     <span className="text-sm">Export VTT</span>
                   </button>
-                  <button
-                    onClick={handleExportJSON}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
-                  >
-                    <Code className="w-4 h-4" />
-                    <span className="text-sm">Export JSON</span>
-                  </button>
-                  <button
-                    onClick={handleEdit}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                    <span className="text-sm">Edit</span>
-                  </button>
+                   <button
+                     onClick={handleExportJSON}
+                     className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
+                   >
+                     <Code className="w-4 h-4" />
+                     <span className="text-sm">Export JSON</span>
+                   </button>
+                   <button
+                     onClick={handleSummarize}
+                     disabled={loadingSummary}
+                     className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 rounded border border-purple-700 hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                   >
+                     {loadingSummary ? (
+                       <Loader className="w-4 h-4 animate-spin" />
+                     ) : (
+                       <Sparkles className="w-4 h-4" />
+                     )}
+                     <span className="text-sm">{loadingSummary ? 'Summarizing...' : 'Summarize'}</span>
+                   </button>
+                   <button
+                     onClick={handleEdit}
+                     className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
+                   >
+                     <Edit className="w-4 h-4" />
+                     <span className="text-sm">Edit</span>
+                   </button>
                </>
              )}
            </div>

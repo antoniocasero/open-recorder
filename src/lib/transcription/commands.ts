@@ -52,3 +52,13 @@ export async function readTranscript(audioPath: string): Promise<string | null> 
     return null
   }
 }
+
+/**
+ * Generates AI summary of transcript text using OpenAI chat models.
+ * @param text Transcript text to summarize
+ * @returns Summary string (bullet points)
+ * @throws Error if API key missing, network error, or empty text
+ */
+export async function summarizeTranscript(text: string): Promise<string> {
+  return invoke<string>('summarize_transcript', { text })
+}
