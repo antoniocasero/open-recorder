@@ -32,22 +32,38 @@ export function Player({ recording }: PlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [error, setError] = useState<string | null>(null)
 
   // Stop and reset when recording changes
   useEffect(() => {
-    if (audioRef.current) {
+    if (audioRef.current && recording) {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
       setIsPlaying(false)
       setCurrentTime(0)
       setDuration(0)
+      setError(null)
+      // Force reload when source changes
+      const audioSrc = convertFileSrc(recording.path)
+      audioRef.current.src = audioSrc
+      audioRef.current.load()
     }
-  }, [recording?.id])
+  }, [recording?.id, recording?.path])
+
+  // Debug logging
+  useEffect(() => {
+    if (recording) {
+      const audioSrc = convertFileSrc(recording.path)
+      console.log('Audio file path:', recording.path)
+      console.log('Converted audio src:', audioSrc)
+    }
+  }, [recording?.path])
 
   // Update duration when metadata loads
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration)
+      setError(null)
     }
   }
 
@@ -55,6 +71,32 @@ export function Player({ recording }: PlayerProps) {
   const handleTimeUpdate = () => {
     if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime)
+    }
+  }
+
+  // Handle audio errors
+  const handleError = () => {
+    if (audioRef.current) {
+      const error = audioRef.current.error
+      if (error) {
+        let errorMessage = 'Failed to load audio'
+        switch (error.code) {
+          case error.MEDIA_ERR_ABORTED:
+            errorMessage = 'Audio loading aborted'
+            break
+          case error.MEDIA_ERR_NETWORK:
+            errorMessage = 'Network error while loading audio'
+            break
+          case error.MEDIA_ERR_DECODE:
+            errorMessage = 'Audio decoding error'
+            break
+          case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            errorMessage = 'Audio format not supported'
+            break
+        }
+        setError(errorMessage)
+        setIsPlaying(false)
+      }
     }
   }
 
@@ -66,8 +108,47 @@ export function Player({ recording }: PlayerProps) {
       audioRef.current.pause()
       setIsPlaying(false)
     } else {
-      await audioRef.current.play()
-      setIsPlaying(true)
+      try {
+        // Wait for audio to be ready
+        if (audioRef.current.readyState < 2) {
+          // If not ready, wait for canplay event
+          await new Promise<void>((resolve, reject) => {
+            const audio = audioRef.current
+            if (!audio) {
+              reject(new Error('Audio element not available'))
+              return
+            }
+
+            const handleCanPlay = () => {
+              audio.removeEventListener('canplay', handleCanPlay)
+              audio.removeEventListener('error', handleLoadError)
+              resolve()
+            }
+
+            const handleLoadError = () => {
+              audio.removeEventListener('canplay', handleCanPlay)
+              audio.removeEventListener('error', handleLoadError)
+              reject(new Error('Audio failed to load'))
+            }
+
+            if (audio.readyState >= 2) {
+              resolve()
+            } else {
+              audio.addEventListener('canplay', handleCanPlay)
+              audio.addEventListener('error', handleLoadError)
+              audio.load() // Trigger load if not already loading
+            }
+          })
+        }
+
+        await audioRef.current.play()
+        setIsPlaying(true)
+        setError(null)
+      } catch (err) {
+        console.error('Playback error:', err)
+        setError(err instanceof Error ? err.message : 'Failed to play audio')
+        setIsPlaying(false)
+      }
     }
   }
 
@@ -88,7 +169,7 @@ export function Player({ recording }: PlayerProps) {
     )
   }
 
-  const audioSrc = convertFileSrc(recording.path)
+  const audioSrc = recording ? convertFileSrc(recording.path) : ''
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
@@ -96,14 +177,19 @@ export function Player({ recording }: PlayerProps) {
       <audio
         ref={audioRef}
         src={audioSrc}
+        preload="metadata"
         onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleEnded}
+        onError={handleError}
       />
 
       <div className="mb-6">
         <h2 className="text-xl font-semibold">{recording.name}</h2>
         <p className="text-sm text-gray-400 mt-1">{formatDate(recording.mtime)}</p>
+        {error && (
+          <p className="text-sm text-red-400 mt-2">Error: {error}</p>
+        )}
       </div>
 
       <div className="flex flex-col items-center gap-6">

@@ -32,3 +32,4 @@ async-openai = { version = "0.32.3", features = ["audio"] }
 tokio = { version = "1.49", features = ["full"] }
 thiserror = "2.0"
 tracing = "0.1"
+dotenv = "0.15"
