@@ -144,6 +144,7 @@ pub fn run() {
         scan_folder_for_audio,
         read_file_meta,
         commands::transcription::transcribe_audio,
+        commands::transcription::transcribe_audio_batch,
         commands::transcription::save_transcript
     ])
     .run(tauri::generate_context!())
