@@ -6,6 +6,7 @@ use async_openai::{
         CreateTranscriptionRequestArgs,
         TimestampGranularity,
     },
+    types::chat::{ChatCompletionRequestMessage, ChatCompletionRequestUserMessage, ChatCompletionRequestUserMessageContent, CreateChatCompletionRequestArgs},
     Client,
 };
 use tauri_plugin_http::reqwest::Error as ReqwestError;
@@ -199,6 +200,52 @@ async fn read_transcript_inner(path: PathBuf) -> Result<String, TranscriptionErr
         .map_err(|e| TranscriptionError::FileError(e.to_string()))?;
     
     Ok(content)
+}
+
+#[tauri::command]
+pub async fn summarize_transcript(text: String) -> Result<String, String> {
+    summarize_transcript_inner(text).await.map_err(|e| e.to_string())
+}
+
+async fn summarize_transcript_inner(text: String) -> Result<String, TranscriptionError> {
+    // Validate input
+    if text.trim().is_empty() {
+        return Err(TranscriptionError::TranscriptionFailed(
+            "Transcript text is empty".to_string(),
+        ));
+    }
+
+    let api_key = std::env::var("OPENAI_API_KEY")
+        .map_err(|_| TranscriptionError::MissingApiKey)?;
+
+    let config = OpenAIConfig::new().with_api_key(&api_key);
+    let client = Client::with_config(config);
+
+    let prompt = format!(
+        "Summarize the following transcript in 3‑5 bullet points. Focus on key points, decisions, and action items. Transcript:\n\n{}",
+        text
+    );
+
+    let request = CreateChatCompletionRequestArgs::default()
+        .model("gpt-3.5-turbo")
+        .messages(vec![ChatCompletionRequestMessage::User(ChatCompletionRequestUserMessage {
+            content: ChatCompletionRequestUserMessageContent::Text(prompt),
+            name: None,
+        })])
+        .build()
+        .map_err(|e| TranscriptionError::RequestError(e.to_string()))?;
+
+    let response = client
+        .chat()
+        .create(request)
+        .await
+        .map_err(|e| TranscriptionError::ApiError(e.to_string()))?;
+
+    response
+        .choices
+        .first()
+        .and_then(|choice| choice.message.content.clone())
+        .ok_or_else(|| TranscriptionError::TranscriptionFailed("No content in response".to_string()))
 }
 
 #[cfg(test)]
