@@ -1,9 +1,10 @@
 'use client'
 
-import { X, Copy, Download, Edit, Save, XCircle, Loader } from 'lucide-react'
+import { X, Copy, Download, Edit, Save, XCircle, Loader, FileText, FileCode, Code } from 'lucide-react'
 import { Transcript } from '@/lib/transcription/types'
 import { useState } from 'react'
 import { saveTranscript } from '@/lib/transcription/commands'
+import { toSRT, toVTT, toJSON, downloadFile } from '@/lib/transcription/export'
 import toast from 'react-hot-toast'
 
 interface TranscriptionModalProps {
@@ -35,6 +36,21 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const handleExportSRT = () => {
+    const content = toSRT(transcript)
+    downloadFile(content, `transcript_${Date.now()}.srt`)
+  }
+
+  const handleExportVTT = () => {
+    const content = toVTT(transcript)
+    downloadFile(content, `transcript_${Date.now()}.vtt`)
+  }
+
+  const handleExportJSON = () => {
+    const content = toJSON(transcript)
+    downloadFile(content, `transcript_${Date.now()}.json`)
   }
 
   const handleEdit = () => {
@@ -170,20 +186,41 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
                    <Copy className="w-4 h-4" />
                    <span className="text-sm">{copied ? 'Copied!' : 'Copy'}</span>
                  </button>
-                 <button
-                   onClick={handleDownload}
-                   className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
-                 >
-                   <Download className="w-4 h-4" />
-                   <span className="text-sm">Download .txt</span>
-                 </button>
-                 <button
-                   onClick={handleEdit}
-                   className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
-                 >
-                   <Edit className="w-4 h-4" />
-                   <span className="text-sm">Edit</span>
-                 </button>
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="text-sm">Download .txt</span>
+                  </button>
+                  <button
+                    onClick={handleExportSRT}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span className="text-sm">Export SRT</span>
+                  </button>
+                  <button
+                    onClick={handleExportVTT}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
+                  >
+                    <FileCode className="w-4 h-4" />
+                    <span className="text-sm">Export VTT</span>
+                  </button>
+                  <button
+                    onClick={handleExportJSON}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
+                  >
+                    <Code className="w-4 h-4" />
+                    <span className="text-sm">Export JSON</span>
+                  </button>
+                  <button
+                    onClick={handleEdit}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span className="text-sm">Edit</span>
+                  </button>
                </>
              )}
            </div>
