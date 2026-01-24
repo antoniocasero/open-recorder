@@ -37,3 +37,18 @@ export async function getTranscriptPath(audioPath: string): Promise<string | nul
 export async function saveTranscript(audioPath: string, text: string): Promise<void> {
   return invoke('save_transcript', { path: audioPath, text })
 }
+
+/**
+ * Reads transcript text from sidecar .txt file.
+ * @param audioPath Path to the audio file
+ * @returns Transcript text if file exists, null if file not found or error
+ */
+export async function readTranscript(audioPath: string): Promise<string | null> {
+  try {
+    return await invoke<string>('read_transcript', { path: audioPath })
+  } catch (error) {
+    // File not found or other error
+    console.warn(`Failed to read transcript for ${audioPath}:`, error)
+    return null
+  }
+}

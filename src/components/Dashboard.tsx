@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { RecordingsList } from './RecordingsList'
 import { Player } from './Player'
 import { Transcription } from './Transcription'
-import { Settings, RefreshCw, Search } from 'lucide-react'
+import { Settings, RefreshCw, Search, Loader } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { pickFolder, scanFolderForAudio } from '@/lib/fs/commands'
 import { getLastFolder, setLastFolder } from '@/lib/fs/config'
+import { readTranscript } from '@/lib/transcription/commands'
 import { AudioItem } from '@/lib/types'
 
 export function Dashboard() {
@@ -16,18 +17,57 @@ export function Dashboard() {
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<string[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const transcriptCache = useRef<Map<string, string>>(new Map())
 
-  // Basic search - will be replaced with transcript search in Task 3
+  // Debounced transcript search
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([])
+      setSearchLoading(false)
       return
     }
-    const query = searchQuery.toLowerCase()
-    const results = recordings.filter(r => 
-      r.name.toLowerCase().includes(query)
-    ).map(r => r.id)
-    setSearchResults(results)
+
+    const query = searchQuery.toLowerCase().trim()
+    setSearchLoading(true)
+
+    const timeoutId = setTimeout(async () => {
+      const results: string[] = []
+      
+       for (const recording of recordings) {
+        // Check cache first
+        const cached = transcriptCache.current.get(recording.path)
+        if (cached !== undefined) {
+          // cached is string (maybe empty)
+          if (cached && cached.toLowerCase().includes(query)) {
+            results.push(recording.id)
+          }
+          continue
+        }
+        
+        // Not cached, fetch from file
+        const transcriptText = await readTranscript(recording.path)
+        if (transcriptText !== null) {
+          transcriptCache.current.set(recording.path, transcriptText)
+          if (transcriptText.toLowerCase().includes(query)) {
+            results.push(recording.id)
+          }
+        } else {
+          transcriptCache.current.set(recording.path, '')
+        }
+        
+        // Small delay to avoid blocking UI
+        await new Promise(resolve => setTimeout(resolve, 10))
+      }
+      
+      setSearchResults(results)
+      setSearchLoading(false)
+    }, 300) // debounce delay
+
+    return () => {
+      clearTimeout(timeoutId)
+      setSearchLoading(false)
+    }
   }, [searchQuery, recordings])
 
   useEffect(() => {
@@ -105,7 +145,11 @@ export function Dashboard() {
         <div className="flex items-center gap-3">
           {/* Search input */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+             {searchLoading ? (
+               <Loader className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+             ) : (
+               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+             )}
             <input
               type="text"
               placeholder="Search transcripts…"
@@ -121,11 +165,16 @@ export function Dashboard() {
                 ✕
               </button>
             )}
-            {searchQuery && searchResults.length > 0 && (
-              <span className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 text-sm text-gray-400 whitespace-nowrap">
-                {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
-              </span>
-            )}
+             {searchQuery && searchLoading && (
+               <span className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 text-sm text-gray-400 whitespace-nowrap">
+                 Searching...
+               </span>
+             )}
+             {searchQuery && !searchLoading && searchResults.length > 0 && (
+               <span className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 text-sm text-gray-400 whitespace-nowrap">
+                 {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+               </span>
+             )}
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[#252525] rounded-md border border-[#333]">
             <div className="w-2 h-2 bg-green-500 rounded-full" />
@@ -147,11 +196,17 @@ export function Dashboard() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-6 mb-6">
-        <RecordingsList 
-          recordings={filteredRecordings}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-        />
+        {searchQuery.trim() && filteredRecordings.length === 0 && !searchLoading ? (
+          <div className="bg-[#252525] rounded-lg border border-[#333] p-4 flex items-center justify-center h-[400px]">
+            <p className="text-gray-400 text-sm">No transcripts found for "{searchQuery}"</p>
+          </div>
+        ) : (
+          <RecordingsList 
+            recordings={filteredRecordings}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+        )}
         <Player recording={selectedRecording} />
       </div>
 
