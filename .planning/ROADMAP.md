@@ -12,7 +12,7 @@ Add transcription capabilities to the existing audio recorder desktop app using 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Transcription MVP** - Complete v1 transcription feature using OpenAI Whisper API
+- [x] **Phase 1: Transcription MVP** - Complete v1 transcription feature using OpenAI Whisper API
 - [ ] **Phase 2: Transcript Management & Enhancements** - Batch transcription, editing, search, export formats (v2)
 - [ ] **Phase 3: Advanced Features & Scalability** - Offline transcription, real-time, AI summary, user-level key management (v2+)
 
@@ -35,10 +35,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md — Setup dependencies and types
-- [ ] 01-02-PLAN.md — Backend transcription command
+- [x] 01-02-PLAN.md — Backend transcription command
 - [x] 01-03-PLAN.md — Frontend command wrapper and button
 - [x] 01-04-PLAN.md — Transcript display and notifications
-- [ ] 01-05-PLAN.md — Error handling and verification
+- [x] 01-05-PLAN.md — Error handling and verification
 
 ### Phase 2: Transcript Management & Enhancements
 **Goal**: Enhance transcription with batch processing, editing, search, and export capabilities
@@ -50,10 +50,15 @@ Plans:
   3. User can search within transcript content for keywords
   4. User can export transcript to multiple formats (SRT, VTT, JSON)
   5. App identifies different speakers in transcript (speaker diarization)
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md — Batch transcription UI and backend
+- [ ] 02-02-PLAN.md — Transcript editing and saving
+- [ ] 02-03-PLAN.md — Search across transcripts
+- [ ] 02-04-PLAN.md — Export to SRT, VTT, JSON formats
+- [ ] 02-05-PLAN.md — Speaker diarization (identification)
+- [ ] 02-06-PLAN.md — AI summary generation
 
 ### Phase 3: Advanced Features & Scalability
 **Goal**: Add offline transcription, real-time capabilities, and user management features
@@ -77,6 +82,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Transcription MVP | 4/5 | In progress | - |
-| 2. Transcript Management & Enhancements | 0/TBD | Not started | - |
+| 1. Transcription MVP | 5/5 | Complete | 2026-01-24 |
+| 2. Transcript Management & Enhancements | 0/6 | Not started | - |
 | 3. Advanced Features & Scalability | 0/TBD | Not started | - |
