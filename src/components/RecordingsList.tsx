@@ -30,6 +30,8 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
   const [transcriptionStates, setTranscriptionStates] = useState<Record<string, TranscriptionState>>({})
   const [showTranscriptModal, setShowTranscriptModal] = useState(false)
   const [currentTranscript, setCurrentTranscript] = useState<Transcript | null>(null)
+  const [currentRecordingId, setCurrentRecordingId] = useState<string | null>(null)
+  const [currentAudioPath, setCurrentAudioPath] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [batchProcessing, setBatchProcessing] = useState(false)
 
@@ -194,9 +196,17 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
                 </button>
                 <button
                   onClick={handleBatchTranscribe}
-                  className="px-3 py-1 text-xs bg-orange-600 rounded border border-orange-700 hover:bg-orange-700 transition-colors"
+                  disabled={batchProcessing || selectedIds.size === 0}
+                  className="px-3 py-1 text-xs bg-orange-600 rounded border border-orange-700 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                 >
-                  Transcribe Selected
+                  {batchProcessing ? (
+                    <>
+                      <Loader className="w-3 h-3 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    `Transcribe Selected${selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}`
+                  )}
                 </button>
               </div>
             </div>
