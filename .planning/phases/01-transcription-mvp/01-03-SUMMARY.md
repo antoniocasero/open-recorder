@@ -61,7 +61,7 @@ Each task was committed atomically:
 2. **Task 2: Update RecordingsList with transcribe button** - `6beb765` (feat)
 3. **Task 3: Ensure button styling matches existing UI** - `4b08de4` (style)
 
-**Plan metadata:** *to be added after final commit*
+**Plan metadata:** `e798341` (docs: complete frontend command wrapper and button plan)
 
 ## Files Created/Modified
 

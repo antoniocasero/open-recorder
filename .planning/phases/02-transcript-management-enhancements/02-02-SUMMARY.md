@@ -66,7 +66,7 @@ Each task was committed atomically:
 2. **Task 2: Create backend command to save edited transcript** - `af6ad83` (feat)
 3. **Task 3: Connect edit UI with save command and update state** - `ca75544` (feat)
 
-**Plan metadata:** `[metadata commit hash will be added after final commit]`
+**Plan metadata:** `a445c33` (docs: complete transcript editing plan)
 
 ## Files Created/Modified
 - `src/components/TranscriptionModal.tsx` - Added edit mode UI, state, save/cancel handlers, loading spinner

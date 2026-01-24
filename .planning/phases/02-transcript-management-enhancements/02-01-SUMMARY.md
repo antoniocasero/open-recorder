@@ -65,7 +65,7 @@ Each task was committed atomically:
 2. **Task 2: Create batch transcription backend command** - `7ddb56d` (feat)
 3. **Task 3: Connect frontend batch UI with backend and add progress feedback** - `56118b2` (feat)
 
-**Plan metadata:** `[to be added after metadata commit]`
+**Plan metadata:** `75d01d6` (docs: complete batch transcription plan)
 
 ## Files Created/Modified
 - `src/components/RecordingsList.tsx` – Added checkboxes, selection state, batch button, and batch transcription logic
