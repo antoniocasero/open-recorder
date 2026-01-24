@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { RecordingsList } from './RecordingsList'
 import { Player } from './Player'
 import { Transcription } from './Transcription'
-import { Settings, RefreshCw } from 'lucide-react'
+import { Settings, RefreshCw, Search } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { pickFolder, scanFolderForAudio } from '@/lib/fs/commands'
 import { getLastFolder, setLastFolder } from '@/lib/fs/config'
@@ -14,6 +14,21 @@ export function Dashboard() {
   const [recordings, setRecordings] = useState<AudioItem[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<string[]>([])
+
+  // Basic search - will be replaced with transcript search in Task 3
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      return
+    }
+    const query = searchQuery.toLowerCase()
+    const results = recordings.filter(r => 
+      r.name.toLowerCase().includes(query)
+    ).map(r => r.id)
+    setSearchResults(results)
+  }, [searchQuery, recordings])
 
   useEffect(() => {
     loadLastFolder()
@@ -35,6 +50,10 @@ export function Dashboard() {
       setSelectedId('mock-1')
     }
   }, [recordings.length])
+
+  const filteredRecordings = searchQuery.trim() 
+    ? recordings.filter(r => searchResults.includes(r.id))
+    : recordings
 
   async function loadLastFolder() {
     const lastPath = await getLastFolder()
@@ -79,9 +98,35 @@ export function Dashboard() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold">Recordings</h1>
-          <p className="text-sm text-gray-400 mt-1">{recordings.length} recordings</p>
+          <p className="text-sm text-gray-400 mt-1">
+            {searchQuery.trim() ? `${filteredRecordings.length} of ${recordings.length} recordings` : `${recordings.length} recordings`}
+          </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Search input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search transcripts…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 bg-[#252525] rounded-md border border-[#333] text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 w-64"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            )}
+            {searchQuery && searchResults.length > 0 && (
+              <span className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 text-sm text-gray-400 whitespace-nowrap">
+                {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-[#252525] rounded-md border border-[#333]">
             <div className="w-2 h-2 bg-green-500 rounded-full" />
             <span className="text-sm text-gray-300">Synced just now</span>
@@ -103,7 +148,7 @@ export function Dashboard() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-6 mb-6">
         <RecordingsList 
-          recordings={recordings}
+          recordings={filteredRecordings}
           selectedId={selectedId}
           onSelect={setSelectedId}
         />
