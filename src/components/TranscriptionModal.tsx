@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Copy, Download, Edit, Save, XCircle, Loader, FileText, FileCode, Code, Sparkles } from 'lucide-react'
+import { X, Copy, Download, Edit, Save, XCircle, Loader, FileText, FileCode, Code, Sparkles, RefreshCw } from 'lucide-react'
 import { Transcript } from '@/lib/transcription/types'
 import { useState } from 'react'
 import { saveTranscript, summarizeTranscript } from '@/lib/transcription/commands'
@@ -180,14 +180,25 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
                   <div className="mt-6 pt-4 border-t border-[#333]">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm font-semibold text-gray-300">AI Summary</h4>
-                      <button
-                        onClick={() => setSummary('')}
-                        className="text-xs text-gray-500 hover:text-gray-300"
-                      >
-                        Clear
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleSummarize}
+                          disabled={loadingSummary}
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 disabled:opacity-50"
+                          title="Regenerate summary"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${loadingSummary ? 'animate-spin' : ''}`} />
+                          Regenerate
+                        </button>
+                        <button
+                          onClick={() => setSummary('')}
+                          className="text-xs text-gray-500 hover:text-gray-300"
+                        >
+                          Clear
+                        </button>
+                      </div>
                     </div>
-                    <div className="bg-[#2a2a2a] rounded border border-[#333] p-3">
+                    <div className="bg-[#2a2a2a] rounded border border-[#333] p-3 max-h-48 overflow-y-auto">
                       <p className="text-sm text-gray-300 whitespace-pre-wrap">{summary}</p>
                     </div>
                   </div>
