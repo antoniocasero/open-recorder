@@ -66,6 +66,7 @@ Users can easily record, organize, and listen to audio recordings with a simple,
 | API key via environment variable | Simpler for initial release, avoids building settings UI | — Pending |
 | Save transcripts as `.txt` files | Easy to locate, no database overhead, portable | — Pending |
 | Button in list + modal display | Consistent with existing UI pattern, clear user flow | — Pending |
+| Transcript editing saves to same sidecar .txt file pattern | Consistency with existing transcription output, no new file format | — Implemented 02-02 |
 
 ---
-*Last updated: 2026-01-23 after roadmap creation*
+*Last updated: 2026-01-24 after transcript editing implementation*
