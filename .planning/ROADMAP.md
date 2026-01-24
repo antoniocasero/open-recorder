@@ -13,7 +13,7 @@ Add transcription capabilities to the existing audio recorder desktop app using 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Transcription MVP** - Complete v1 transcription feature using OpenAI Whisper API
-- [ ] **Phase 2: Transcript Management & Enhancements** - Batch transcription, editing, search, export formats (v2)
+- [x] **Phase 2: Transcript Management & Enhancements** - Batch transcription, editing, search, export formats (v2)
 - [ ] **Phase 3: Advanced Features & Scalability** - Offline transcription, real-time, AI summary, user-level key management (v2+)
 
 ## Phase Details
@@ -53,12 +53,12 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Batch transcription UI and backend
-- [ ] 02-02-PLAN.md — Transcript editing and saving
-- [ ] 02-03-PLAN.md — Search across transcripts
+- [x] 02-01-PLAN.md — Batch transcription UI and backend
+- [x] 02-02-PLAN.md — Transcript editing and saving
+- [x] 02-03-PLAN.md — Search across transcripts
 - [x] 02-04-PLAN.md — Export to SRT, VTT, JSON formats
 - [x] 02-05-PLAN.md — Speaker diarization (identification) (deferred)
-- [ ] 02-06-PLAN.md — AI summary generation
+- [x] 02-06-PLAN.md — AI summary generation
 
 ### Phase 3: Advanced Features & Scalability
 **Goal**: Add offline transcription, real-time capabilities, and user management features
@@ -83,5 +83,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Transcription MVP | 5/5 | Complete | 2026-01-24 |
-| 2. Transcript Management & Enhancements | 5/6 | In progress | - |
+| 2. Transcript Management & Enhancements | 6/6 | Complete | 2026-01-24 |
 | 3. Advanced Features & Scalability | 0/TBD | Not started | - |

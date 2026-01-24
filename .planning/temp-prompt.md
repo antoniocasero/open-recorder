@@ -1,0 +1,348 @@
+Continue from checkpoint. User reported: "404 error in the ui"
+
+Completed tasks:
+1. Task 1: Create command wrapper (commit 02e2ae7) - src/lib/transcription/commands.ts
+2. Task 2: Update RecordingsList with transcribe button (commit 6beb765) - src/components/RecordingsList.tsx  
+3. Task 3: Ensure button styling matches existing UI (commit 4b08de4) - src/components/RecordingsList.tsx
+
+Current task: Verification: Confirm frontend integration works
+
+Fix the 404 error first (likely missing root page or routing issue), then verify the frontend integration works as described in the plan.
+
+After fixing, create SUMMARY.md and update STATE.md.
+
+---
+
+Plan content:
+---
+phase: 01-transcription-mvp
+plan: 03
+type: execute
+wave: 2
+depends_on: ["01-01"]
+files_modified:
+  - src/lib/transcription/commands.ts
+  - src/components/RecordingsList.tsx
+autonomous: true
+user_setup: []
+
+must_haves:
+  truths:
+    - "Frontend can trigger transcription process"
+    - "Each recording in the list has a transcribe button"
+    - "Button shows loading spinner during transcription"
+  artifacts:
+    - path: "src/lib/transcription/commands.ts"
+      provides: "transcribeAudio function wrapping Tauri command"
+      exports: ["transcribeAudio"]
+    - path: "src/components/RecordingsList.tsx"
+      provides: "Transcribe button per recording with loading state"
+      contains: "Transcribe"
+  key_links:
+    - from: "src/lib/transcription/commands.ts"
+      to: "src/lib/transcription/types.ts"
+      via: "import"
+      pattern: "import.*Transcript"
+    - from: "src/components/RecordingsList.tsx"
+      to: "src/lib/transcription/commands.ts"
+      via: "import"
+      pattern: "transcribeAudio"
+    - from: "src/components/RecordingsList.tsx"
+      to: "loading spinner UI"
+      via: "Lucide Loader icon"
+      pattern: "Loader.*animate-spin"
+---
+
+<objective>
+Create frontend command wrapper and integrate transcribe button into recordings list with loading state.
+
+Purpose: Enable UI to trigger transcription per recording and provide visual feedback during processing.
+Output: Type‑safe transcription function and updated RecordingsList with functional transcribe buttons.
+</objective>
+
+<execution_context>
+@~/.opencode/get-shit-done/workflows/execute-plan.md
+@~/.opencode/get-shit-done/templates/summary.md
+</execution_context>
+
+<context>
+@.planning/PROJECT.md
+@.planning/ROADMAP.md
+@.planning/STATE.md
+@.planning/phases/01-transcription-mvp/01-RESEARCH.md
+@.planning/phases/01-transcription-mvp/01-01-SUMMARY.md
+</context>
+
+<tasks>
+
+<task type="auto">
+  <name>Task 1: Create command wrapper</name>
+  <files>src/lib/transcription/commands.ts</files>
+  <action>
+    Create directory `src/lib/transcription/` if it doesn't exist.
+    Create file `src/lib/transcription/commands.ts` with the following content:
+    
+    ```typescript
+    import { invoke } from '@tauri-apps/api/core'
+    import { Transcript } from './types'
+    
+    /**
+     * Transcribes an audio file using OpenAI Whisper API.
+     * @param filePath Path to the audio file
+     * @returns Transcript with text, word timestamps, duration, and language
+     * @throws Error if transcription fails (missing API key, network error, etc.)
+     */
+    export async function transcribeAudio(filePath: string): Promise<Transcript> {
+      return invoke<Transcript>('transcribe_audio', { path: filePath })
+    }
+    
+    /**
+     * Checks if a transcript file already exists for the given audio file.
+     * @param audioPath Path to the audio file
+     * @returns Path to the transcript .txt file if it exists, null otherwise
+     */
+    export async function getTranscriptPath(audioPath: string): Promise<string | null> {
+      // Simple heuristic: replace extension with .txt
+      const transcriptPath = audioPath.replace(/\.[^/.]+$/, '.txt')
+      // TODO: actually check if file exists (requires additional Tauri command)
+      // For now, return the expected path
+      return transcriptPath
+    }
+    ```
+    
+    **Why:** Provides a clean, typed interface for calling the backend command.
+  </action>
+  <verify>File exists and exports `transcribeAudio` function</verify>
+  <done>Command wrapper can be imported and used</done>
+</task>
+
+<task type="auto">
+  <name>Task 2: Update RecordingsList with transcribe button</name>
+  <files>src/components/RecordingsList.tsx</files>
+  <action>
+    Modify `RecordingsList.tsx` to add a transcribe button for each recording.
+    
+    1. Import necessary dependencies at the top:
+    
+    ```typescript
+    import { Loader, FileText } from 'lucide-react'
+    import { transcribeAudio } from '@/lib/transcription/commands'
+    import { TranscriptionState } from '@/lib/transcription/types'
+    ```
+    
+    2. Add state for tracking transcription status per recording inside the component:
+    
+    ```typescript
+    const [transcriptionStates, setTranscriptionStates] = useState<Record<string, TranscriptionState>>({})
+    ```
+    
+    3. Define a `handleTranscribe` function:
+    
+    ```typescript
+    const handleTranscribe = async (recording: AudioItem) => {
+      setTranscriptionStates(prev => ({
+        ...prev,
+        [recording.id]: { status: 'loading' }
+      }))
+      
+      try {
+        const transcript = await transcribeAudio(recording.path)
+        setTranscriptionStates(prev => ({
+          ...prev,
+          [recording.id]: { status: 'success', transcript }
+        }))
+        // Toast will be added in a later plan
+      } catch (error) {
+        setTranscriptionStates(prev => ({
+          ...prev,
+          [recording.id]: { status: 'error', error: error instanceof Error ? error.message : String(error) }
+        }))
+      }
+    }
+    ```
+    
+    4. Inside the recording loop, add a button after the metadata section:
+    
+    ```tsx
+    <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+      {/* Existing duration and size spans */}
+      <span className="flex items-center gap-1">
+        <Clock className="w-3 h-3" />
+        {formatDuration(recording.duration)}
+      </span>
+      <span className="flex items-center gap-1">
+        <HardDrive className="w-3 h-3" />
+        {formatSize(recording.size)}
+      </span>
+      {/* Transcribe button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          handleTranscribe(recording)
+        }}
+        disabled={transcriptionStates[recording.id]?.status === 'loading'}
+        className="flex items-center gap-1 ml-auto px-2 py-1 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {transcriptionStates[recording.id]?.status === 'loading' ? (
+          <Loader className="w-3 h-3 animate-spin" />
+        ) : (
+          <FileText className="w-3 h-3" />
+        )}
+        <span className="text-xs">
+          {transcriptionStates[recording.id]?.status === 'loading' ? 'Transcribing...' : 'Transcribe'}
+        </span>
+      </button>
+    </div>
+    ```
+    
+    **Why:** Provides per‑recording transcription trigger with immediate visual feedback.
+  </action>
+  <verify>RecordingsList renders a transcribe button for each recording; clicking shows spinner</verify>
+  <done>Transcribe button appears and enters loading state when clicked</done>
+</task>
+
+<task type="auto">
+  <name>Task 3: Ensure button styling matches existing UI</name>
+  <files>src/components/RecordingsList.tsx</files>
+  <action>
+    Adjust button styling to match the existing design system (dark theme, borders, hover states).
+    
+    - Use same background color (`bg-[#2a2a2a]`) and border color (`border-[#333]`) as other UI elements.
+    - Ensure hover effect (`hover:bg-[#333]`) matches adjacent buttons.
+    - Keep text size consistent (`text-xs`).
+    - Position button at the right side of the metadata row (`ml-auto`).
+    
+    Also ensure the button does not interfere with the recording selection click.
+    
+    **Why:** Maintain visual consistency and prevent UX regressions.
+  </action>
+  <verify>Button styling blends seamlessly with existing UI</verify>
+  <done>Transcribe button looks like a native part of the interface</done>
+</task>
+
+</tasks>
+
+<verification>
+- Start dev server (`npm run dev`) and verify RecordingsList shows transcribe buttons.
+- Click a button (without API key) – button should show spinner, then error state (no toast yet).
+- Check that the component does not crash when transcription fails.
+</verification>
+
+<success_criteria>
+1. `src/lib/transcription/commands.ts` exports `transcribeAudio`.
+2. Each recording entry in RecordingsList has a "Transcribe" button.
+3. Button shows loading spinner when clicked.
+4. Transcription state per recording is tracked (loading/success/error).
+</success_criteria>
+
+<output>
+After completion, create `.planning/phases/01-transcription-mvp/01-03-SUMMARY.md`
+</output>
+---
+Project state:
+# Project State
+
+## Project Reference
+
+See: .planning/PROJECT.md (updated 2026-01-23)
+
+**Core value:** Users can easily record, organize, and listen to audio recordings with a simple, fast desktop interface.
+**Current focus:** Phase 1 - Transcription MVP
+
+## Current Position
+
+Phase: 1 of 3 (Transcription MVP)
+Plan: 2 of 5 in current phase
+Status: In progress
+Last activity: 2026-01-23 — Completed 01-02-PLAN.md
+
+Progress: [████░░░░░░] 40%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 2
+- Average duration: 20 min
+- Total execution time: 0.7 hours
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 1 | 2 | 40 min | 20 min |
+
+**Recent Trend:**
+- Last 5 plans: [01-01, 01-02]
+- Trend: Steady
+
+*Updated after each plan completion*
+
+## Accumulated Context
+
+### Decisions
+
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- [Initial]: Use OpenAI Whisper API for transcription
+- [Initial]: API key via environment variable only
+- [Initial]: Save transcripts as .txt files alongside audio
+- [Initial]: Button per recording + modal display pattern
+- [01-01]: Used Tauri v2 capabilities instead of security.allow for HTTP permission (schema mismatch)
+- [01-02]: Use async-openai crate with audio feature for Whisper API integration
+- [01-02]: Client configuration via OpenAIConfig with API key from environment variable
+- [01-02]: Word-level timestamp extraction using verbose JSON response
+- [01-02]: Sidecar .txt file saving pattern alongside original audio
+
+### Pending Todos
+
+[From .planning/todos/pending/ — ideas captured during sessions]
+
+None yet.
+
+### Blockers/Concerns
+
+[Issues that affect future work]
+
+None yet.
+
+## Session Continuity
+
+Last session: 2026-01-23
+Stopped at: Completed 01-02-PLAN.md
+Resume file: None
+
+Config:
+{
+  "mode": "yolo",
+  "depth": "standard",
+  "parallelization": true,
+  "commit_docs": true,
+  "model_profile": "balanced",
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true
+  }
+}
+
+<success_criteria>
+- [ ] All tasks executed
+- [ ] Each task committed individually
+- [ ] SUMMARY.md created in plan directory
+- [ ] STATE.md updated with position and decisions
+</success_criteria>
+---
+Config:
+{
+  "mode": "yolo",
+  "depth": "standard",
+  "parallelization": true,
+  "commit_docs": true,
+  "model_profile": "balanced",
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true
+  }
+}
