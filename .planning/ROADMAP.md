@@ -56,7 +56,7 @@ Plans:
 - [ ] 02-01-PLAN.md — Batch transcription UI and backend
 - [ ] 02-02-PLAN.md — Transcript editing and saving
 - [ ] 02-03-PLAN.md — Search across transcripts
-- [ ] 02-04-PLAN.md — Export to SRT, VTT, JSON formats
+- [x] 02-04-PLAN.md — Export to SRT, VTT, JSON formats
 - [ ] 02-05-PLAN.md — Speaker diarization (identification)
 - [ ] 02-06-PLAN.md — AI summary generation
 
@@ -83,5 +83,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Transcription MVP | 5/5 | Complete | 2026-01-24 |
-| 2. Transcript Management & Enhancements | 2/6 | In progress | - |
+| 2. Transcript Management & Enhancements | 4/6 | In progress | - |
 | 3. Advanced Features & Scalability | 0/TBD | Not started | - |
