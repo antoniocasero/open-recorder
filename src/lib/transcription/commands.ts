@@ -11,6 +11,10 @@ export async function transcribeAudio(filePath: string): Promise<Transcript> {
   return invoke<Transcript>('transcribe_audio', { path: filePath })
 }
 
+export async function transcribeAudioBatch(filePaths: string[]): Promise<Array<Transcript | string>> {
+  return invoke<Array<Transcript | string>>('transcribe_audio_batch', { paths: filePaths })
+}
+
 /**
  * Checks if a transcript file already exists for the given audio file.
  * @param audioPath Path to the audio file
@@ -22,4 +26,14 @@ export async function getTranscriptPath(audioPath: string): Promise<string | nul
   // TODO: actually check if file exists (requires additional Tauri command)
   // For now, return the expected path
   return transcriptPath
+}
+
+/**
+ * Saves edited transcript text back to sidecar .txt file.
+ * @param audioPath Path to the original audio file
+ * @param text The edited transcript text
+ * @throws Error if file write fails
+ */
+export async function saveTranscript(audioPath: string, text: string): Promise<void> {
+  return invoke('save_transcript', { path: audioPath, text })
 }

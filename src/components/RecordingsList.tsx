@@ -3,7 +3,7 @@
 import { Play, Clock, HardDrive, Loader, FileText } from 'lucide-react'
 import { useState } from 'react'
 import { AudioItem } from '@/lib/types'
-import { transcribeAudio } from '@/lib/transcription/commands'
+import { transcribeAudio, transcribeAudioBatch } from '@/lib/transcription/commands'
 import { TranscriptionState, Transcript } from '@/lib/transcription/types'
 import toast, { Toaster } from 'react-hot-toast'
 import { TranscriptionModal } from './TranscriptionModal'
@@ -31,6 +31,7 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
   const [showTranscriptModal, setShowTranscriptModal] = useState(false)
   const [currentTranscript, setCurrentTranscript] = useState<Transcript | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [batchProcessing, setBatchProcessing] = useState(false)
 
   const toggleSelection = (id: string) => {
     setSelectedIds(prev => {
@@ -45,8 +46,70 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
   }
 
   const handleBatchTranscribe = async () => {
-    console.log('Batch transcribe selected:', Array.from(selectedIds))
-    // TODO: implement batch transcription
+    if (selectedIds.size === 0 || batchProcessing) return
+    
+    setBatchProcessing(true)
+    
+    // Get selected recordings
+    const selectedRecordings = recordings.filter(r => selectedIds.has(r.id))
+    const paths = selectedRecordings.map(r => r.path)
+    
+    // Set loading state for each selected recording
+    setTranscriptionStates(prev => {
+      const next = { ...prev }
+      selectedRecordings.forEach(r => {
+        next[r.id] = { status: 'loading' }
+      })
+      return next
+    })
+    
+    try {
+      const results = await transcribeAudioBatch(paths)
+      
+      let successCount = 0
+      let errorCount = 0
+      
+      // Update transcription states based on results
+      setTranscriptionStates(prev => {
+        const next = { ...prev }
+        selectedRecordings.forEach((recording, index) => {
+          const result = results[index]
+          if (typeof result === 'string') {
+            // Error string
+            next[recording.id] = { status: 'error', error: result }
+            errorCount++
+          } else {
+            // Transcript object
+            next[recording.id] = { status: 'success', transcript: result }
+            successCount++
+          }
+        })
+        return next
+      })
+      
+      // Show summary toast
+      if (successCount > 0) {
+        toast.success(`Transcribed ${successCount} recording${successCount !== 1 ? 's' : ''} successfully`, {
+          duration: 5000,
+        })
+      }
+      if (errorCount > 0) {
+        toast.error(`${errorCount} transcription${errorCount !== 1 ? 's' : ''} failed`, {
+          duration: 6000,
+        })
+      }
+      
+      // Clear selection after successful processing
+      setSelectedIds(new Set())
+      
+    } catch (error) {
+      // Overall batch error (e.g., network issue)
+      toast.error(`Batch transcription failed: ${error instanceof Error ? error.message : String(error)}`, {
+        duration: 6000,
+      })
+    } finally {
+      setBatchProcessing(false)
+    }
   }
 
   const selectAll = () => {
@@ -79,6 +142,8 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
       
       // Open modal with transcript
       setCurrentTranscript(transcript)
+      setCurrentRecordingId(recording.id)
+      setCurrentAudioPath(recording.path)
       setShowTranscriptModal(true)
     } catch (error) {
       setTranscriptionStates(prev => ({
@@ -90,6 +155,16 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
       toast.error(`Transcription failed: ${error instanceof Error ? error.message : String(error)}`, {
         duration: 5000,
       })
+    }
+  }
+
+  const handleTranscriptSaved = (transcript: Transcript) => {
+    if (currentRecordingId) {
+      setTranscriptionStates(prev => ({
+        ...prev,
+        [currentRecordingId]: { status: 'success', transcript }
+      }))
+      setCurrentTranscript(transcript)
     }
   }
 
@@ -198,12 +273,16 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
             ))}
           </div>
         </div>
-      {showTranscriptModal && currentTranscript && (
+      {showTranscriptModal && currentTranscript && currentAudioPath && (
         <TranscriptionModal
           transcript={currentTranscript}
+          audioPath={currentAudioPath}
+          onSaveTranscript={handleTranscriptSaved}
           onClose={() => {
             setShowTranscriptModal(false)
             setCurrentTranscript(null)
+            setCurrentRecordingId(null)
+            setCurrentAudioPath(null)
           }}
         />
       )}

@@ -1,19 +1,23 @@
 'use client'
 
-import { X, Copy, Download, Edit, Save, XCircle } from 'lucide-react'
+import { X, Copy, Download, Edit, Save, XCircle, Loader } from 'lucide-react'
 import { Transcript } from '@/lib/transcription/types'
 import { useState } from 'react'
+import { saveTranscript } from '@/lib/transcription/commands'
+import toast from 'react-hot-toast'
 
 interface TranscriptionModalProps {
   transcript: Transcript
   audioPath?: string
+  onSaveTranscript?: (transcript: Transcript) => void
   onClose: () => void
 }
 
-export function TranscriptionModal({ transcript, audioPath, onClose }: TranscriptionModalProps) {
+export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, onClose }: TranscriptionModalProps) {
   const [copied, setCopied] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [editedText, setEditedText] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(transcript.text)
@@ -43,10 +47,35 @@ export function TranscriptionModal({ transcript, audioPath, onClose }: Transcrip
     setEditedText('')
   }
 
-  const handleSave = () => {
-    // TODO: implement save functionality in Task 3
-    console.log('Save edited text:', editedText)
-    setEditMode(false)
+  const handleSave = async () => {
+    if (!audioPath) {
+      toast.error('Cannot save: missing audio file path')
+      return
+    }
+    setSaving(true)
+    try {
+      await saveTranscript(audioPath, editedText)
+      
+      // Create updated transcript object
+      const updatedTranscript: Transcript = {
+        ...transcript,
+        text: editedText
+      }
+      
+      // Notify parent if callback provided
+      if (onSaveTranscript) {
+        onSaveTranscript(updatedTranscript)
+      }
+      
+      setEditMode(false)
+      toast.success('Transcript saved successfully')
+    } catch (error) {
+      console.error('Failed to save transcript:', error)
+      toast.error(`Failed to save transcript: ${error instanceof Error ? error.message : String(error)}`)
+      // Stay in edit mode
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -113,17 +142,23 @@ export function TranscriptionModal({ transcript, audioPath, onClose }: Transcrip
                <>
                  <button
                    onClick={handleCancel}
-                   className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors"
+                   disabled={saving}
+                   className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] rounded border border-[#333] hover:bg-[#333] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                  >
                    <XCircle className="w-4 h-4" />
                    <span className="text-sm">Cancel</span>
                  </button>
                  <button
                    onClick={handleSave}
-                   className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 rounded border border-blue-700 hover:bg-blue-700 transition-colors"
+                   disabled={saving}
+                   className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 rounded border border-blue-700 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                  >
-                   <Save className="w-4 h-4" />
-                   <span className="text-sm">Save</span>
+                   {saving ? (
+                     <Loader className="w-4 h-4 animate-spin" />
+                   ) : (
+                     <Save className="w-4 h-4" />
+                   )}
+                   <span className="text-sm">{saving ? 'Saving...' : 'Save'}</span>
                  </button>
                </>
              ) : (
