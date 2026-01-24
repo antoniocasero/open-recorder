@@ -180,6 +180,27 @@ async fn save_transcript_inner(path: PathBuf, text: String) -> Result<(), Transc
     Ok(())
 }
 
+#[tauri::command]
+pub async fn read_transcript(path: PathBuf) -> Result<String, String> {
+    read_transcript_inner(path).await.map_err(|e| e.to_string())
+}
+
+async fn read_transcript_inner(path: PathBuf) -> Result<String, TranscriptionError> {
+    // Get transcript file path
+    let transcript_path = path.with_extension("txt");
+    
+    // Check if file exists
+    if !transcript_path.exists() {
+        return Err(TranscriptionError::FileNotFound(format!("Transcript file not found: {}", transcript_path.display())));
+    }
+    
+    // Read file content
+    let content = std::fs::read_to_string(&transcript_path)
+        .map_err(|e| TranscriptionError::FileError(e.to_string()))?;
+    
+    Ok(content)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -205,5 +226,24 @@ mod tests {
         
         // Clean up
         std::env::remove_var("OPENAI_API_KEY");
+    }
+    
+    #[tokio::test]
+    async fn test_read_transcript() {
+        // Create a temporary transcript file
+        let temp_dir = std::env::temp_dir();
+        let audio_path = temp_dir.join("test_audio.mp3");
+        let transcript_path = audio_path.with_extension("txt");
+        let test_content = "This is a test transcript.";
+        
+        std::fs::write(&transcript_path, test_content).unwrap();
+        
+        // Test reading
+        let result = read_transcript_inner(audio_path).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), test_content);
+        
+        // Clean up
+        std::fs::remove_file(&transcript_path).unwrap();
     }
 }
