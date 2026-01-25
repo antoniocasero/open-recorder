@@ -6,4 +6,8 @@
   .table-row-hover {
     @apply hover:bg-slate-800/30 transition-colors cursor-pointer;
   }
+
+  .waveform-bar {
+    @apply bg-indigo-primary/30 rounded-full transition-all duration-300;
+  }
 }
