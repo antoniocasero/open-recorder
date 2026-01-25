@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Users can easily record, organize, and listen to audio recordings with a simple, fast desktop interface.
-**Current focus:** Phase 3 - Advanced Features & Scalability
+**Current focus:** Phase 3 - UI Redesign (Three-page layout: Library, Editor, Insights)
 
 ## Current Position
 
-Phase: 2 of 3 (Transcript Management & Enhancements)
-Plan: 6 of 6 in current phase
-Status: Phase complete
-Last activity: 2026-01-24 — Completed 02-06-PLAN.md
+Phase: 3 of 3 (Advanced Features & Scalability - UI Redesign)
+Plan: 0 of TBD in current phase
+Status: Planning phase - awaiting UI mocks
+Last activity: 2026-01-25 — Starting Phase 3 UI redesign
 
 Progress: [██████████] 100%
 

@@ -61,15 +61,16 @@ Plans:
 - [x] 02-06-PLAN.md — AI summary generation
 
 ### Phase 3: Advanced Features & Scalability
-**Goal**: Add offline transcription, real-time capabilities, and user management features
+**Goal**: Redesign UI into three-page layout (Library, Editor, Insights) with enhanced transcript viewing and AI insights
 **Depends on**: Phase 2
-**Requirements**: TRAN-17, TRAN-18 (v2 requirements) plus additional requirements
+**Requirements**: UI-01, UI-02, UI-03 (see CONTEXT.md for details)
 **Success Criteria** (what must be TRUE):
-  1. User can transcribe offline using local Whisper model (optional)
-  2. User can get real-time transcription during recording
-  3. App generates AI summary of transcript content
-  4. User can manage API keys per user with cost tracking
-  5. App handles rate limiting with queueing and advanced error recovery
+  1. User can browse recordings in Library page with table view (waveform, status, metadata)
+  2. User can navigate to Editor page for a selected recording
+  3. Editor page shows transcript with speaker segmentation, click‑to‑play timestamps, and search
+  4. Editor page displays AI insights (summary, recommended actions, key topics)
+  5. Navigation between Library, Editor, and Insights (placeholder) works via header
+  6. UI matches provided mocks for Library and Editor pages
 **Plans**: TBD
 
 Plans:
