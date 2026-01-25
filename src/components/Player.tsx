@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Play, Pause } from 'lucide-react'
+
 import { AudioItem } from '@/lib/types'
 import { convertFileSrc } from '@tauri-apps/api/core'
 
@@ -152,6 +152,14 @@ export function Player({ recording }: PlayerProps) {
     }
   }
 
+  // Handle skip forward/backward
+  const handleSkip = (seconds: number) => {
+    if (!audioRef.current) return;
+    const newTime = audioRef.current.currentTime + seconds;
+    const maxTime = audioRef.current.duration || duration;
+    audioRef.current.currentTime = Math.max(0, Math.min(newTime, maxTime));
+  };
+
   // Handle playback end
   const handleEnded = () => {
     setIsPlaying(false)
@@ -194,16 +202,35 @@ export function Player({ recording }: PlayerProps) {
 
       <div className="flex flex-col items-center gap-6">
         {/* Play/Pause Button */}
-        <button
-          onClick={togglePlayPause}
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 flex items-center justify-center shadow-lg transition-all"
-        >
-          {isPlaying ? (
-            <Pause className="w-7 h-7 text-white" fill="white" />
-          ) : (
-            <Play className="w-7 h-7 text-white ml-1" fill="white" />
-          )}
-        </button>
+        <div className="flex items-center justify-center gap-4">
+          {/* Replay 10s */}
+          <button
+            onClick={() => handleSkip(-10)}
+            className="text-slate-400 hover:text-slate-100 transition-colors"
+          >
+            <span className="material-symbols-outlined text-2xl">replay_10</span>
+          </button>
+
+          {/* Play/Pause Button */}
+          <button
+            onClick={togglePlayPause}
+            className="size-12 rounded-full bg-indigo-primary text-white hover:scale-105 transition-transform flex items-center justify-center"
+          >
+            {isPlaying ? (
+              <span className="material-symbols-outlined">pause</span>
+            ) : (
+              <span className="material-symbols-outlined">play_arrow</span>
+            )}
+          </button>
+
+          {/* Forward 10s */}
+          <button
+            onClick={() => handleSkip(10)}
+            className="text-slate-400 hover:text-slate-100 transition-colors"
+          >
+            <span className="material-symbols-outlined text-2xl">forward_10</span>
+          </button>
+        </div>
 
         {/* Waveform */}
         <div className="w-full flex items-center justify-center gap-0.5 h-24">
