@@ -71,10 +71,15 @@ Plans:
   4. Editor page displays AI insights (summary, recommended actions, key topics)
   5. Navigation between Library, Editor, and Insights (placeholder) works via header
   6. UI matches provided mocks for Library and Editor pages
-**Plans**: TBD
+ **Plans**: 6 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md — Foundation & Routing (shared layout, pages)
+- [ ] 03-02-PLAN.md — Library Page (table, status badges, filters)
+- [ ] 03-03-PLAN.md — Editor Layout & Player Sidebar
+- [ ] 03-04-PLAN.md — Transcript View & Search
+- [ ] 03-05-PLAN.md — AI Insights Sidebar
+- [ ] 03-06-PLAN.md — Integration & Polish
 
 ## Progress
 
@@ -85,4 +90,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Transcription MVP | 5/5 | Complete | 2026-01-24 |
 | 2. Transcript Management & Enhancements | 6/6 | Complete | 2026-01-24 |
-| 3. Advanced Features & Scalability | 0/TBD | Not started | - |
+| 3. Advanced Features & Scalability | 0/6 | Not started | - |
