@@ -31,3 +31,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# planning docs
+.planning/
+
+# backup files
+*.bak
+
+# Rust build artifacts
+/target/
