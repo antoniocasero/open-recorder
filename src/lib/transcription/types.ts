@@ -11,6 +11,13 @@ export interface Transcript {
   language: string
 }
 
+export interface TranscriptSegment {
+  speaker: string
+  text: string
+  start: number
+  end: number
+}
+
 export type TranscriptionStatus =
   | 'idle'
   | 'loading'
