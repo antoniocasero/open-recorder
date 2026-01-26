@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can easily record, organize, and listen to audio recordings with a simple, fast desktop interface.
-**Current focus:** Planning next milestone
+**Current focus:** Defining requirements
 
 ## Current Position
 
-Phase: (none)
-Plan: Not started
-Status: Ready to plan next milestone
-Last activity: 2026-01-26 — v1.0 milestone complete
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-01-26 — Milestone v1.1 started
 
 Progress: (none)
 

@@ -1,257 +1,326 @@
-# Architecture Research
+# Architecture Patterns
 
-**Domain:** Desktop audio recorder transcription integration
-**Researched:** 2026-01-23
-**Confidence:** HIGH (OpenAI API verified), MEDIUM (architecture patterns)
+**Domain:** Desktop audio recorder with transcription, editing, search, export, AI summarization, and insights
+**Researched:** January 26, 2026
+**Confidence:** HIGH
 
-## Standard Architecture
+## Recommended Architecture
 
-### System Overview
+### System Overview (Existing + New)
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                           Frontend UI Layer                         │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌─────────────────────────┐   │
-│  │ Transcription│  │ Transcription│  │ Toast Notification      │   │
-│  │    Button    │  │    Modal     │  │                         │   │
-│  └──────┬───────┘  └──────┬───────┘  └──────────┬──────────────┘   │
-│         │                 │                      │                  │
-├─────────┴─────────────────┴──────────────────────┴──────────────────┤
-│                        Command Layer                                 │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │                   transcribeAudio(path)                     │    │
-│  │    (TypeScript wrapper for Tauri invoke)                    │    │
-│  └──────────────────────────────┬──────────────────────────────┘    │
-├─────────────────────────────────┼───────────────────────────────────┤
-│                      Backend Service Layer                          │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │              transcribe_audio Rust command                  │    │
-│  │  (reads file, calls OpenAI API, writes transcript)          │    │
-│  └──────────────────────────────┬──────────────────────────────┘    │
-├─────────────────────────────────┼───────────────────────────────────┤
-│                       External Services                            │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │                  OpenAI Whisper API                         │    │
-│  │           (cloud transcription service)                     │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 Frontend UI Layer                                        │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐   │
+│ │   Library    │ │    Editor    │ │   Insights   │ │  Settings    │ │  Transcription│   │
+│ │    Page      │ │    Page      │ │    Page      │ │    Page      │ │   Components  │   │
+│ └──────┬───────┘ └──────┬───────┘ └──────┬───────┘ └──────┬───────┘ └──────┬───────┘   │
+│        │                │                 │                │                │            │
+├────────┴────────────────┴─────────────────┴────────────────┴────────────────┴────────────┤
+│                                   Command Layer                                           │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────────────────────┐  │
+│ │                    Tauri Invoke (TypeScript wrappers)                               │  │
+│ │  • getRecordings()                                                                  │  │
+│ │  • transcribeAudio()                                                                │  │
+│ │  • getInsightsData()                                                                │  │
+│ │  • getLanguageSettings() / setLanguage()                                            │  │
+│ │  • getEditorState() / setEditorState()                                              │  │
+│ └────────────────────────────────────┬────────────────────────────────────────────────┘  │
+├──────────────────────────────────────┼────────────────────────────────────────────────────┤
+│                                  Backend Service Layer                                    │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────────────────────┐  │
+│ │                              Rust Commands                                          │  │
+│ │  • File system scanning                                                             │  │
+│ │  • OpenAI transcription                                                             │  │
+│ │  • Insights aggregation (compute stats from transcript files)                       │  │
+│ │  • Store management (config.json)                                                   │  │
+│ └────────────────────────────────────┬────────────────────────────────────────────────┘  │
+├──────────────────────────────────────┼────────────────────────────────────────────────────┤
+│                                  External Services                                       │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────────────────────────────────────┐  │
+│ │                           OpenAI Whisper API                                        │  │
+│ └─────────────────────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Responsibilities
 
 | Component | Responsibility | Typical Implementation |
 |-----------|----------------|------------------------|
+| **Existing Components** | | |
 | Transcription Button | Trigger transcription flow per recording, show spinner during processing | React component in RecordingsList row, uses local state for loading |
 | Transcription Modal | Display transcript text with word‑level timestamps, allow copy/close | Modal component that receives transcript data via props |
-| Toast Notification | Show success/error feedback after transcription completes | React toast library or custom component with timeout |
-| transcribeAudio command wrapper | Type‑safe interface to invoke Rust transcription command | TypeScript function in `src/lib/transcription/commands.ts` |
-| transcribe_audio Rust command | Read audio file, call OpenAI API with env var key, parse response, write .txt file | `#[tauri::command]` async function using reqwest for HTTP |
-| OpenAI API Client | Handle authentication, multipart form upload, error responses, rate limiting | Dedicated Rust module (`src-tauri/src/transcription.rs`) |
-| Transcript File Writer | Save transcript as `.txt` alongside original audio file with same basename | Standard Rust file I/O, error handling for permissions |
-| Environment Config | Provide OPENAI_API_KEY from environment variable to backend | Tauri plugin or std::env::var, validated at startup |
+| Toast Notification | Show success/error feedback after transcription completes | react‑hot‑toast |
+| **New Components** | | |
+| Insights Page | Display charts and statistics about transcription activity | Next.js page (`/insights`) with Recharts components |
+| Language Selector | Dropdown for choosing UI language | React component using i18next `useTranslation` and `changeLanguage` |
+| Settings Page | Manage language preference and other settings | Page with form, connected to Tauri store |
+| Editor State Persistence | Save/restore UI state (expanded panels, selected options) | Custom hook `usePersistedState` using Tauri store |
+| Chart Components (Bar, Line, Pie) | Visualize transcription metrics | Recharts `<BarChart>`, `<LineChart>`, `<PieChart>` with Tailwind styling |
 
-## Recommended Project Structure
+## New Architecture Patterns for v1.1
 
-```
-src/
-├── components/
-│   ├── TranscriptionButton.tsx   # Button with spinner state
-│   ├── TranscriptionModal.tsx    # Modal with timestamp display
-│   └── Toast.tsx                 # Reusable notification toast
-├── lib/
-│   ├── transcription/
-│   │   ├── commands.ts           # TypeScript wrapper for invoke
-│   │   ├── types.ts              # Transcript, Timestamp interfaces
-│   │   └── state.ts              # React hooks for transcription state
-│   └── fs/                       # Existing file system commands
-│
-src-tauri/
-├── src/
-│   ├── commands/
-│   │   ├── transcription.rs      # transcribe_audio command handler
-│   │   └── mod.rs
-│   ├── openai/
-│   │   ├── client.rs             # HTTP client for Whisper API
-│   │   ├── models.rs             # Request/response structs (serde)
-│   │   └── mod.rs
-│   └── lib.rs                    # Register new command
-└── main.rs
-```
+### Pattern 1: Client‑Side Internationalization
 
-### Structure Rationale
+**What:** Use i18next with JSON translation files stored in `public/locales/`. Language preference saved in Tauri store.
 
-- **Frontend separation**: Keep transcription UI components separate from existing components for clarity.
-- **Command layer extension**: Follow existing pattern (`src/lib/fs/commands.ts`) for new transcription commands.
-- **Backend module isolation**: Dedicated `openai` module encapsulates API specifics, making it testable and replaceable.
-- **Type sharing**: Define `Transcript` and `Timestamp` types in TypeScript and Rust (via serde) for type‑safe cross‑language communication.
-
-## Architectural Patterns
-
-### Pattern 1: Command‑Driven Backend
-
-**What:** Extend Tauri's command system with a new `transcribe_audio` command that handles the entire transcription pipeline.
-
-**When to use:** When you need secure access to environment variables, filesystem, and network from desktop backend.
+**When to use:** Any desktop app needing multi‑language UI without server‑side rendering.
 
 **Trade‑offs:**
-- **Pros:** Keeps API key secure in backend, leverages existing Tauri IPC pattern, clean separation of concerns.
-- **Cons:** Adds complexity of Rust HTTP client, requires handling async file I/O and networking.
+- **Pros:** Simple setup, works with static export, dynamic language switching.
+- **Cons:** Translation files increase bundle size (manageable), no built‑in pluralization rules for all languages.
 
 **Example:**
-```rust
-#[tauri::command]
-async fn transcribe_audio(path: PathBuf) -> Result<Transcript, String> {
-    let api_key = env::var("OPENAI_API_KEY").map_err(|_| "Missing API key")?;
-    let client = OpenAIClient::new(api_key);
-    let transcript = client.transcribe(path).await?;
-    // Save transcript as .txt file
-    fs::write(transcript_path, &transcript.text)?;
-    Ok(transcript)
+```typescript
+// src/lib/i18n/config.ts
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import Backend from 'i18next-http-backend'; // loads translations from /public
+
+i18n.use(Backend).use(initReactI18next).init({
+  fallbackLng: 'en',
+  interpolation: { escapeValue: false },
+});
+```
+
+### Pattern 2: Chart‑Driven Insights Page
+
+**What:** Use Recharts to render SVG‑based charts from aggregated transcription data.
+
+**When to use:** When you need to visualize usage statistics, trends, distributions.
+
+**Trade‑offs:**
+- **Pros:** React‑native, good documentation, customizable.
+- **Cons:** Adds ~20 kB gzipped, requires data aggregation logic.
+
+**Example:**
+```typescript
+// src/components/Insights/TranscriptionStatsChart.tsx
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+
+export default function TranscriptionStatsChart({ data }) {
+  return (
+    <BarChart data={data}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="date" />
+      <YAxis />
+      <Tooltip />
+      <Bar dataKey="count" fill="#3b82f6" />
+    </BarChart>
+  );
 }
 ```
 
-### Pattern 2: Async Progress Reporting
+### Pattern 3: Persistent UI State with Tauri Store
 
-**What:** Use Tauri events to emit progress updates during long‑running transcription.
+**What:** Extend existing `@tauri‑apps/plugin‑store` usage to persist editor‑page UI state (e.g., expanded panels, selected options).
 
-**When to use:** For large audio files where users need visual feedback beyond a spinner.
+**When to use:** For any UI state that should survive app restarts.
 
 **Trade‑offs:**
-- **Pros:** Better UX with incremental updates, can show estimated time remaining.
-- **Cons:** More complex event system, requires frontend subscription management.
+- **Pros:** No need for additional libraries, consistent with existing storage pattern.
+- **Cons:** Store is asynchronous; need to handle loading states.
 
 **Example:**
-```rust
-// Emit progress events (0‑100%)
-window.emit("transcription-progress", 25)?;
+```typescript
+// src/lib/store/editor.ts
+import { getStore } from '../fs/config';
+
+export async function getEditorState(): Promise<EditorState | null> {
+  const store = await getStore();
+  return await store.get<EditorState>('editorState');
+}
+
+export async function setEditorState(state: EditorState): Promise<void> {
+  const store = await getStore();
+  await store.set('editorState', state);
+  await store.save();
+}
 ```
 
-### Pattern 3: Transcript Caching
+### Pattern 4: Sticky Footer with Tailwind
 
-**What:** Check for existing `.txt` transcript file before calling API; skip if already exists.
+**What:** Use `position: sticky` and Tailwind utilities to keep footer elements visible during scrolling.
 
-**When to use:** When users may re‑transcribe same file, or when you want offline viewing of past transcripts.
+**When to use:** For pagination controls, action bars that should remain accessible.
 
 **Trade‑offs:**
-- **Pros:** Saves API costs, faster loading of existing transcripts.
-- **Cons:** Need versioning if transcription model improves, stale cache if audio changes.
+- **Pros:** Pure CSS, no JavaScript, works across browsers.
+- **Cons:** May cause layout shifts if content height changes.
 
-## Data Flow
-
-### Request Flow
-
-```
-User clicks "Transcribe" button
-    ↓
-TranscriptionButton → calls transcribeAudio(path)
-    ↓
-transcribeAudio invokes Rust transcribe_audio command
-    ↓
-Rust reads audio file, builds multipart form
-    ↓
-HTTP POST to OpenAI Whisper API with API key
-    ↓
-OpenAI returns JSON with text (and optional timestamps)
-    ↓
-Rust writes .txt file alongside original audio
-    ↓
-Rust returns Transcript object to frontend
-    ↓
-Frontend opens TranscriptionModal with transcript data
-    ↓
-Toast notification shows "Transcription complete"
+**Example:**
+```html
+<div className="sticky bottom-0 bg-white border-t px-4 py-2">
+  <!-- pagination controls -->
+</div>
 ```
 
-### State Management
+## Data Flow for New Features
+
+### Insights Page Data Flow
 
 ```
-Recording State
-    ↓ (per recording)
-{
-  id: string,
-  isTranscribing: boolean,
-  transcript?: Transcript,
-  error?: string
-}
-    ↓ (UI subscribes)
-TranscriptionButton (shows spinner when isTranscribing)
-TranscriptionModal (shows transcript when present)
+User navigates to /insights
+    ↓
+Page loads → useEffect fetches aggregated data via Tauri command `getInsightsData`
+    ↓
+Rust command scans transcript files, computes statistics (counts, durations, languages)
+    ↓
+Returns JSON with aggregated data
+    ↓
+React component passes data to Recharts components
+    ↓
+Charts render with Tailwind styling
 ```
 
-### Key Data Flows
+### Language Settings Data Flow
 
-1. **Audio File → OpenAI API:** Binary audio file streamed via multipart form, max 25MB per API limits.
-2. **Transcript → File System:** Plain text `.txt` file saved with same basename as audio file (e.g., `recording.mp3` → `recording.txt`).
-3. **Timestamps → UI Display:** Word‑level timestamps (if using `verbose_json` response) used to create interactive transcript with click‑to‑seek.
+```
+User opens Settings page
+    ↓
+Dropdown loads current language from Tauri store (`getLanguage`)
+    ↓
+User selects new language → calls `setLanguage` command
+    ↓
+Rust saves language code to store
+    ↓
+Frontend calls i18next `changeLanguage(lng)`
+    ↓
+i18next loads translation JSON from /public/locales/{lng}/translation.json
+    ↓
+UI re‑renders with new translations (no page reload)
+```
+
+### Editor Persistent State Flow
+
+```
+Editor page mounts
+    ↓
+useEffect calls `getEditorState` command
+    ↓
+Rust retrieves serialized state from store
+    ↓
+State applied to UI (expand panels, select options)
+    ↓
+User interacts → state changes → debounced `setEditorState` calls
+    ↓
+Rust saves updated state to store (automatically on app exit)
+```
 
 ## Scaling Considerations
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 0‑100 users | Current architecture sufficient; API costs minimal |
-| 100‑10k users | Consider local caching of transcripts to reduce API calls; batch processing for large libraries |
-| 10k+ users | Evaluate local Whisper model (whisper.cpp) to avoid API costs; queue system for concurrent transcriptions |
+| Concern | At 100 recordings | At 10k recordings | At 100k recordings |
+|---------|-------------------|-------------------|-------------------|
+| **Insights aggregation** | In‑memory Rust computation (<1s) | Background thread, cache results | Pre‑computed stats, incremental updates |
+| **Translation files** | JSON files in /public (negligible) | Same (no scaling issue) | Same |
+| **UI state storage** | Store size <10 KB | Store size <1 MB | Consider splitting stores by feature |
 
-### Scaling Priorities
+## Anti‑Patterns to Avoid
 
-1. **First bottleneck:** OpenAI API rate limits (requests per minute). Implement exponential backoff and retry logic.
-2. **Second bottleneck:** Large audio libraries (>1k files). Add background batch processing with progress reporting.
-3. **Third bottleneck:** File I/O when scanning folders with many transcript files. Cache transcript metadata in SQLite.
+### Anti‑Pattern 1: Storing Translations in Frontend State
 
-## Anti-Patterns
+**What people do:** Keep translation strings in React context or useState.
 
-### Anti-Pattern 1: Frontend API Calls
+**Why it's wrong:** Bloat context, harder to manage dynamic language switching, no support for pluralization.
 
-**What people do:** Call OpenAI API directly from frontend JavaScript with API key embedded.
+**Do this instead:** Use i18next with dedicated JSON files and its built‑in caching.
 
-**Why it's wrong:** Exposes secret API key in client bundle, violates OpenAI security policies, CORS issues.
+### Anti‑Pattern 2: Direct DOM Manipulation for Sticky Footer
 
-**Do this instead:** Keep API key in backend environment variable, use Tauri commands for secure communication.
+**What people do:** Use JavaScript to calculate scroll position and adjust footer position.
 
-### Anti-Pattern 2: Blocking UI During Transcription
+**Why it's wrong:** Over‑engineering, janky scroll performance, harder to maintain.
 
-**What people do:** Synchronous command that freezes UI until transcription completes.
+**Do this instead:** Use CSS `position: sticky` with Tailwind utilities.
 
-**Why it's wrong:** Poor user experience, app appears frozen for long audio files.
+### Anti‑Pattern 3: Chart Library Over‑Customization
 
-**Do this instead:** Use async Rust commands (`#[tauri::command] async fn`), show spinner, consider progress events.
+**What people do:** Spend excessive time tweaking chart aesthetics beyond what users need.
 
-### Anti-Pattern 3: Hard‑Coded File Paths
+**Why it's wrong:** Diminishing returns, increases code complexity, delays feature delivery.
 
-**What people do:** Assume audio files are in a fixed location or have specific permissions.
+**Do this instead:** Use Recharts defaults with Tailwind colors; customize only essential brand alignment.
 
-**Why it's wrong:** Breaks on different OS, fails with read‑only directories, permission errors.
+### Anti‑Pattern 4: Blocking UI on Store Reads
 
-**Do this instead:** Use Tauri's path resolver for appropriate directories, validate file existence and permissions before attempting transcription.
+**What people do:** Await Tauri store read synchronously during component render.
+
+**Why it's wrong:** Freezes UI until store loads, poor user experience.
+
+**Do this instead:** Use React suspense or loading states, load store asynchronously in useEffect.
 
 ## Integration Points
 
-### External Services
+### External Libraries
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| OpenAI Whisper API | HTTP multipart form POST to `https://api.openai.com/v1/audio/transcriptions` | API key via Bearer token, max 25MB file size, supports streaming |
-| File System (transcript saving) | Rust `std::fs::write` with same basename + `.txt` extension | Ensure UTF‑8 encoding, handle write errors gracefully |
+| Library | Integration Point | Notes |
+|---------|------------------|-------|
+| **Recharts** | Import in Insights page components | Peer dependencies satisfied (React 19). Use tree‑shaking. |
+| **i18next / react‑i18next** | Initialize in `_app.tsx` or root layout | Load translations via HTTP backend from `/public/locales`. |
+| **Tauri plugin‑store** | Extended `src/lib/fs/config.ts` | Already used for last‑folder persistence; add new keys for language and editor state. |
 
 ### Internal Boundaries
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| Frontend ↔ Backend | Tauri invoke with serialized AudioItem path | Follow existing command pattern for consistency |
-| Rust command ↔ OpenAI client | Module‑internal function call with `Result` error propagation | Isolate HTTP concerns for testability |
+| Frontend ↔ Backend (Insights) | New Tauri command `get_insights_data` | Returns aggregated statistics JSON. |
+| Frontend ↔ Backend (Language) | Extend existing store commands | Use same store file (`config.json`). |
+| Frontend ↔ Backend (Editor state) | Extend existing store commands | Store as JSON object. |
+| React ↔ Recharts | Props drilling | Pass data as array of objects. |
+| React ↔ i18next | `useTranslation` hook | Access `t()` function. |
+
+## Recommended Project Structure Additions
+
+```
+src/
+├── components/
+│   ├── Insights/
+│   │   ├── TranscriptionStatsChart.tsx
+│   │   ├── LanguageDistributionChart.tsx
+│   │   └── DurationTrendChart.tsx
+│   ├── Settings/
+│   │   ├── LanguageSelector.tsx
+│   │   └── SettingsPage.tsx
+│   └── Editor/
+│       └── usePersistedState.ts   # custom hook
+├── lib/
+│   ├── i18n/
+│   │   ├── config.ts              # i18next initialization
+│   │   └── resources.ts           # type‑safe translation keys
+│   ├── insights/
+│   │   ├── commands.ts            # getInsightsData wrapper
+│   │   └── types.ts               # AggregatedData interface
+│   └── store/
+│       ├── editor.ts              # getEditorState / setEditorState
+│       └── language.ts            # getLanguage / setLanguage
+src‑tauri/
+├── src/
+│   ├── commands/
+│   │   ├── insights.rs            # compute aggregated stats
+│   │   ├── language.rs            # store language preference
+│   │   └── editor_state.rs        # store editor UI state
+│   └── lib.rs
+public/
+└── locales/
+    ├── en/
+    │   └── translation.json
+    ├── es/
+    │   └── translation.json
+    └── fr/
+        └── translation.json
+```
 
 ## Sources
 
-- **OpenAI Whisper API Documentation:** https://platform.openai.com/docs/api-reference/audio (HIGH confidence)
-- **Tauri Command System:** Official Tauri docs on commands and async handling (HIGH confidence)
-- **Existing Project Architecture:** `.planning/codebase/ARCHITECTURE.md` (HIGH confidence)
-- **Desktop Audio App Patterns:** Industry knowledge from similar applications (MEDIUM confidence)
+- **Recharts documentation** – Official docs (recharts.github.io)
+- **i18next documentation** – Official docs (react.i18next.com)
+- **Tauri plugin‑store documentation** – Official docs (tauri.app)
+- **Existing project architecture** – Already validated patterns
 
 ---
-
-*Architecture research for: Open Recorder Tauri transcription feature*
-*Researched: 2026-01-23*
+*Architecture research for: Open Recorder Tauri v1.1 (insights page, UI fixes, language settings)*  
+*Researched: January 26, 2026*

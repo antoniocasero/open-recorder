@@ -1,10 +1,10 @@
-# Feature Research
+# Feature Landscape
 
-**Domain:** Audio recorder transcription
-**Researched:** 2026-01-23
-**Confidence:** MEDIUM
+**Domain:** Desktop audio recorder with transcription, editing, search, export, AI summarization, and insights
+**Researched:** January 26, 2026
+**Confidence:** HIGH
 
-## Feature Landscape
+## Existing Features (Validated)
 
 ### Table Stakes (Users Expect These)
 
@@ -44,7 +44,39 @@ Features that set the product apart. Not required, but valuable.
 | Highlight keywords | Automatically identify important terms | Medium | Use NLP techniques or keyword extraction libraries |
 | Integration with note-taking apps | Push transcripts to Obsidian, Notion, etc. | Medium | Build export connectors or copy-paste optimized formatting |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+## New Features for v1.1
+
+### Insights Page
+
+| Feature | Category | Value Proposition | Complexity | Notes |
+|---------|----------|-------------------|------------|-------|
+| Transcription statistics dashboard | Differentiator | Visualize usage patterns, track productivity, identify trends | Medium | Use Recharts to display bar/line/pie charts of transcription count, duration, language distribution, word count over time. |
+| Design mocks integration | Table stake | Professional, polished appearance | Low | Implement static design mocks as placeholders; later replace with real data. |
+| Key metrics display | Differentiator | Show total recordings, total transcription minutes, average duration, most used language | Low | Simple card components with Tailwind CSS. |
+
+### UI Fixes
+
+| Feature | Category | Why Needed | Complexity | Notes |
+|---------|----------|------------|------------|-------|
+| Action button fix (Library page) | Table stake | Improve usability, ensure button triggers correct action | Low | Adjust button styling and event handling. |
+| Duration display fix (Library page) | Table stake | Show accurate duration for each recording | Low | Format milliseconds to MM:SS, ensure data binding. |
+| Sticky footer (Library page) | Table stake | Keep pagination/actions accessible while scrolling | Low | CSS `position: sticky` with Tailwind. |
+
+### Editor Page Permanent Storage
+
+| Feature | Category | Value Proposition | Complexity | Notes |
+|---------|----------|-------------------|------------|-------|
+| Persist action states (expanded panels, selected options) | Table stake | Remember user preferences across sessions, improve UX | Low | Extend existing Tauri store to save editor UI state. |
+
+### Language Settings
+
+| Feature | Category | Value Proposition | Complexity | Notes |
+|---------|----------|-------------------|------------|-------|
+| Language selection dropdown | Table stake | Allow users to choose UI language | Low | Dropdown with flag icons, store choice in Tauri store. |
+| Translation capability | Differentiator | Support multiple languages (English, Spanish, French, etc.) | Medium | Use i18next + react‑i18next with JSON translation files. |
+| Dynamic language switching | Table stake | Change UI language without restart | Low | React context + i18next `changeLanguage()`. |
+
+## Anti-Features (Commonly Requested, Often Problematic)
 
 Features that seem good but create problems.
 
@@ -66,123 +98,68 @@ Features that seem good but create problems.
 ## Feature Dependencies
 
 ```
-API key configuration → Transcription button (needs key)
-Transcription button → Loading indicator → Transcript display
-Transcript display → Save as .txt
-Batch transcription depends on single‑file transcription
-Offline transcription requires local model download
-Speaker diarization requires Basic transcription
-Edit transcript requires Basic transcription
-Export to multiple formats requires Transcript data model
-Real-time transcription requires Streaming API integration
-Real-time transcription conflicts with Offline transcription (different architecture)
+Insights page → Recharts library
+Language settings → i18next + react‑i18next
+Language settings → Tauri store (for preference)
+Editor persistent storage → Tauri store
+UI fixes → Tailwind CSS adjustments (no new dependencies)
 ```
 
 ### Dependency Notes
 
-- **Speaker diarization requires Basic transcription:** Diarization builds on transcription output, adding speaker labels to segments.
-- **Edit transcript requires Basic transcription:** Need transcript data before editing.
-- **Export to multiple formats requires Transcript data model:** Need structured transcript data (words with timestamps) to generate SRT/VTT.
-- **Real-time transcription conflicts with Offline transcription:** Real-time uses streaming API; offline uses local model. Choose one architectural direction.
-- **Basic transcription requires Audio file selection:** Need to know which audio file to transcribe.
-- **Audio file selection requires Folder scanning:** Need to scan folders to populate recording list.
+- **Insights page requires Recharts:** Charting library needed for data visualization.
+- **Language settings require i18next:** Internationalization framework needed for translation management.
+- **All new features depend on existing Tauri store:** For persisting user preferences and UI state.
+- **No dependency on existing transcription features:** New features are independent and can be developed in parallel.
 
-## MVP Definition
+## MVP Recommendation for v1.1
 
-### Launch With (v1)
+For milestone v1.1, prioritize:
 
-Minimum viable product — what's needed to validate the concept.
+1. **UI fixes** (action button, duration display, sticky footer) – low‑hanging fruit, immediate UX improvement.
+2. **Language settings** (language selection, translation files) – foundational for international users.
+3. **Editor page permanent storage** – simple persistence using existing store.
+4. **Insights page** (design mocks, basic charts) – adds visual appeal and value.
 
-- [x] **Per‑recording transcription button** (table stake)
-- [x] **Transcript display with timestamps** (table stake)
-- [x] **Word-level timestamps** (table stake)
-- [x] **Save transcript as .txt file** (table stake)
-- [x] **Loading indicator & progress** (table stake)
-- [x] **Error handling (network, API, file)** (table stake)
-- [x] **API key configuration via env var** (table stake)
-- [x] **Cost transparency** (table stake)
-- [x] **Support for common audio formats** (table stake)
-- [x] **Auto language detection** (table stake)
-- [x] **Notification when transcription completes** (table stake)
-
-### Add After Validation (v1.x)
-
-Features to add once core is working.
-
-- [ ] **Batch transcription** — after single‑file works
-- [ ] **Speaker diarization** — niche need, higher cost
-- [ ] **Transcript editing & correction** — improve accuracy and user trust
-- [ ] **Search within transcript** — utility for long recordings
-- [ ] **Export to multiple formats (SRT, VTT)** — broader usability
-- [ ] **Custom vocabulary/prompting** — improve accuracy for specialized content
-
-### Future Consideration (v2+)
-
-Features to defer until product-market fit is established.
-
-- [ ] **Offline transcription** — major infrastructure change
-- [ ] **Real-time transcription (live)** — major architectural change
-- [ ] **AI summary of transcript** — additional LLM cost and complexity
-- [ ] **Auto‑tagging by content** — additional NLP processing
-- [ ] **Translation to other languages** — extra API endpoint
-- [ ] **Highlight keywords** — nice-to-have enhancement
-- [ ] **Integration with note-taking apps** — ecosystem expansion
+Defer to post‑v1.1:
+- Advanced chart interactivity (tooltips, filtering)
+- Additional translation languages beyond English/Spanish/French
+- Real‑time updates of insights data
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Per‑recording transcription button | HIGH | LOW | P1 |
-| Transcript display with timestamps | HIGH | MEDIUM | P1 |
-| Word-level timestamps | HIGH | MEDIUM | P1 |
-| Save transcript as .txt file | HIGH | LOW | P1 |
-| Loading indicator & progress | MEDIUM | LOW | P1 |
-| Error handling | HIGH | MEDIUM | P1 |
-| API key configuration | HIGH | MEDIUM | P1 |
-| Cost transparency | MEDIUM | LOW | P1 |
-| Support for common audio formats | HIGH | LOW | P1 |
-| Auto language detection | MEDIUM | LOW | P1 |
-| Notification on completion | LOW | LOW | P1 |
-| Batch transcription | MEDIUM | MEDIUM | P2 |
-| Speaker diarization | HIGH | HIGH | P2 |
-| Transcript editing & correction | MEDIUM | HIGH | P2 |
-| Search within transcript | MEDIUM | LOW | P2 |
-| Export to multiple formats | MEDIUM | MEDIUM | P2 |
-| Custom vocabulary/prompting | LOW | LOW | P3 |
-| Offline transcription | LOW | VERY HIGH | P3 |
-| Real-time transcription | LOW | HIGH | P3 |
-| AI summary | LOW | HIGH | P3 |
-| Auto‑tagging | LOW | HIGH | P3 |
-| Translation | LOW | MEDIUM | P3 |
-| Highlight keywords | LOW | MEDIUM | P3 |
-| Integration with note-taking apps | LOW | MEDIUM | P3 |
+| UI fixes (action button, duration, sticky footer) | HIGH | LOW | P1 |
+| Language selection dropdown | HIGH | LOW | P1 |
+| Translation capability (i18n) | HIGH | MEDIUM | P1 |
+| Editor persistent storage | MEDIUM | LOW | P1 |
+| Insights page design mocks | LOW | LOW | P2 |
+| Transcription statistics charts | MEDIUM | MEDIUM | P2 |
+| Dynamic language switching | MEDIUM | LOW | P2 |
+| Advanced chart interactivity | LOW | HIGH | P3 |
 
 **Priority key:**
-- P1: Must have for launch (table stakes)
-- P2: Should have, add when possible (differentiators for v1.x)
-- P3: Nice to have, future consideration (v2+)
+- P1: Must have for v1.1
+- P2: Should have if time permits
+- P3: Nice to have, defer
 
 ## Competitor Feature Analysis
 
-| Feature | Otter.ai | OpenAI Whisper API | Our Approach |
-|---------|----------|-------------------|--------------|
-| Transcription accuracy | High (custom models) | High (Whisper/GPT-4o) | Use Whisper API (gpt-4o-transcribe) |
-| Speaker diarization | Yes (automatic) | Yes (gpt-4o-transcribe-diarize) | Plan to add post-MVP |
-| Word-level timestamps | Yes | Yes (whisper-1) | Use whisper-1 with timestamp_granularities |
-| Export formats | Text, PDF, SRT, VTT | JSON, text, SRT, VTT, verbose_json | Start with .txt, add SRT/VTT later |
-| Edit in-app | Full editor | No (API only) | Basic text correction post-MVP |
-| Real-time transcription | Yes (live) | Yes (streaming API) | Defer to v2+ |
-| Custom vocabulary | Yes (team vocab) | Yes (prompt parameter) | Support prompting parameter |
-| Offline capability | No | No (cloud API) | Defer to v2+ with local model |
-| Pricing | Subscription | Pay-per-minute | Free app with user's API key |
+| Feature | Otter.ai | OpenAI Whisper API | Our Approach (v1.1) |
+|---------|----------|-------------------|-------------------|
+| Insights / Analytics | Limited (usage stats) | None | Basic charts (Recharts) |
+| Multi‑language UI | Yes (multiple languages) | No (API only) | i18next with JSON translations |
+| UI customization | Limited | N/A | Tailwind CSS, sticky footer, action button fixes |
+| Persistent UI state | Yes (cloud sync) | N/A | Tauri store (local) |
 
 ## Sources
 
-- **OpenAI Whisper API documentation** (https://platform.openai.com/docs/guides/speech-to-text) — HIGH confidence
-- **Otter.ai features page** (https://otter.ai/features) — MEDIUM confidence
-- **Project context** (PROJECT.md) — HIGH confidence
-- **Industry knowledge of audio recorder apps** (Voice Memos, Android Recorder) — LOW confidence
+- **Recharts documentation** – Official docs (recharts.github.io)
+- **i18next documentation** – Official docs (react.i18next.com)
+- **Tauri plugin‑store documentation** – Official docs (tauri.app)
+- **Existing project code** – Already validated features
 
 ---
-*Feature research for: Open Recorder Tauri transcription feature*
-*Researched: 2026-01-23*
+*Feature research for: Open Recorder Tauri v1.1 (insights page, UI fixes, language settings)*  
+*Researched: January 26, 2026*

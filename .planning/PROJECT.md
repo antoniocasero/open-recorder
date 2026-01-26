@@ -4,6 +4,16 @@
 
 A desktop audio recorder application built with Tauri (Next.js frontend, Rust backend) that allows users to scan folders for audio recordings, play them back, and manage their collection. The app provides basic audio playback, folder scanning, and a simple UI for navigating recordings.
 
+## Current Milestone: v1.1
+
+**Goal:** Add insights page with design mocks, fix library and editor UI issues, add language settings and translation capabilities.
+
+**Target features:**
+- Insights page with design mocks
+- Library page fixes: action button, duration display, sticky footer
+- Editor page: permanent storage for action states
+- Settings: app language selection, translation for transcription
+
 ## Core Value
 
 Users can easily record, organize, and listen to audio recordings with a simple, fast desktop interface.
@@ -32,7 +42,10 @@ Users can easily record, organize, and listen to audio recordings with a simple,
 
 ### Active
 
-None — planning next milestone
+- Insights page with design mocks
+- Library page fixes: action button, duration display, sticky footer
+- Editor page: permanent storage for action states
+- Settings: app language selection, translation for transcription
 
 ### Out of Scope
 
@@ -71,4 +84,4 @@ None — planning next milestone
 | Transcript editing saves to same sidecar .txt file pattern | Consistency with existing transcription output, no new file format | — Implemented 02-02 |
 
 ---
-*Last updated: 2026-01-26 after v1.0 milestone completion*
+*Last updated: 2026-01-26 after v1.1 milestone started*
