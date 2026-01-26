@@ -14,6 +14,9 @@ use serde::{Deserialize, Serialize};
 use std::io::ErrorKind;
 use std::path::PathBuf;
 use thiserror::Error;
+use tauri::{AppHandle, Manager};
+use md5;
+use log::{info, warn};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WordTimestamp {
@@ -100,6 +103,7 @@ pub async fn transcribe_audio_batch(paths: Vec<PathBuf>) -> Result<Vec<Result<Tr
 }
 
 async fn transcribe_audio_inner(path: PathBuf) -> Result<Transcript, TranscriptionError> {
+    info!("Transcribing audio file: {:?}", path);
     let api_key = std::env::var("OPENAI_API_KEY")
         .map_err(|_| TranscriptionError::MissingApiKey)?;
 
@@ -203,11 +207,11 @@ async fn read_transcript_inner(path: PathBuf) -> Result<String, TranscriptionErr
 }
 
 #[tauri::command]
-pub async fn summarize_transcript(text: String) -> Result<String, String> {
-    summarize_transcript_inner(text).await.map_err(|e| e.to_string())
+pub async fn summarize_transcript(app: AppHandle, text: String) -> Result<String, String> {
+    summarize_transcript_inner(app, text).await.map_err(|e| e.to_string())
 }
 
-async fn summarize_transcript_inner(text: String) -> Result<String, TranscriptionError> {
+async fn summarize_transcript_inner(app: AppHandle, text: String) -> Result<String, TranscriptionError> {
     // Validate input
     if text.trim().is_empty() {
         return Err(TranscriptionError::TranscriptionFailed(
@@ -215,6 +219,65 @@ async fn summarize_transcript_inner(text: String) -> Result<String, Transcriptio
         ));
     }
 
+    // Compute hash of transcript text for caching
+    let hash = format!("{:x}", md5::compute(&text));
+    
+    // Try to read from cache
+    if let Some(cached) = read_cache(&app, &hash).await? {
+        info!("Summary cache hit for hash: {}", hash);
+        return Ok(cached);
+    }
+    info!("Summary cache miss for hash: {}", hash);
+    
+    // Cache miss, call API
+    let summary = summarize_transcript_api(text).await?;
+    
+    // Write to cache (ignore errors)
+    let _ = write_cache(&app, &hash, &summary).await;
+    
+    Ok(summary)
+}
+
+async fn read_cache(app: &AppHandle, hash: &str) -> Result<Option<String>, TranscriptionError> {
+    let cache_dir = app.path().local_data_dir().map_err(|e| {
+        TranscriptionError::FileError(format!("Failed to get local data dir: {}", e))
+    })?;
+    let summaries_dir = cache_dir.join("summaries");
+    let cache_file = summaries_dir.join(format!("{}.txt", hash));
+    
+    if !cache_file.exists() {
+        return Ok(None);
+    }
+    
+    match std::fs::read_to_string(&cache_file) {
+        Ok(content) => Ok(Some(content)),
+        Err(_) => Ok(None), // If can't read, treat as cache miss
+    }
+}
+
+async fn write_cache(app: &AppHandle, hash: &str, summary: &str) -> Result<(), TranscriptionError> {
+    info!("Writing summary cache for hash: {}", hash);
+    let cache_dir = app.path().local_data_dir().map_err(|e| {
+        TranscriptionError::FileError(format!("Failed to get local data dir: {}", e))
+    })?;
+    let summaries_dir = cache_dir.join("summaries");
+    
+    // Create directory if it doesn't exist
+    if !summaries_dir.exists() {
+        std::fs::create_dir_all(&summaries_dir).map_err(|e| {
+            TranscriptionError::FileError(format!("Failed to create cache directory: {}", e))
+        })?;
+    }
+    
+    let cache_file = summaries_dir.join(format!("{}.txt", hash));
+    std::fs::write(&cache_file, summary).map_err(|e| {
+        TranscriptionError::FileError(format!("Failed to write cache file: {}", e))
+    })?;
+    
+    Ok(())
+}
+
+async fn summarize_transcript_api(text: String) -> Result<String, TranscriptionError> {
     let api_key = std::env::var("OPENAI_API_KEY")
         .map_err(|_| TranscriptionError::MissingApiKey)?;
 
@@ -269,7 +332,7 @@ mod tests {
         
         let result = transcribe_audio_inner(PathBuf::from("nonexistent.mp3")).await;
         // Should be FileError because file doesn't exist
-        assert!(matches!(result, Err(TranscriptionError::FileError(_))));
+        assert!(matches!(result, Err(TranscriptionError::FileNotFound(_))));
         
         // Clean up
         std::env::remove_var("OPENAI_API_KEY");
