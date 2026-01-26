@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use symphonia::core::formats::FormatOptions;
+use symphonia::core::io::MediaSourceStream;
+use symphonia::core::meta::MetadataOptions;
+use symphonia::core::probe::Hint;
+use symphonia::default::get_probe;
 use tauri_plugin_http;
 
 mod commands;
@@ -57,6 +62,7 @@ fn scan_recursive(dir: &PathBuf, items: &mut Vec<AudioItem>) -> Result<(), Strin
             if ext == "mp3" || ext == "m4a" || ext == "wav" {
                 if let Ok(metadata) = fs::metadata(&path) {
                     let path_str = path.to_string_lossy().to_string();
+                    let duration = read_audio_duration(&path);
                     items.push(AudioItem {
                         id: format!("{:x}", md5::compute(&path_str)),
                         name: path.file_name()
@@ -70,7 +76,7 @@ fn scan_recursive(dir: &PathBuf, items: &mut Vec<AudioItem>) -> Result<(), Strin
                             .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
                             .map(|d| d.as_secs() as i64)
                             .unwrap_or(0),
-                        duration: None,
+                        duration,
                     });
                 }
             }
@@ -80,10 +86,34 @@ fn scan_recursive(dir: &PathBuf, items: &mut Vec<AudioItem>) -> Result<(), Strin
     Ok(())
 }
 
+fn read_audio_duration(path: &PathBuf) -> Option<f64> {
+    let source = fs::File::open(path).ok()?;
+    let mss = MediaSourceStream::new(Box::new(source), Default::default());
+    let mut hint = Hint::new();
+
+    if let Some(ext) = path.extension().and_then(|ext| ext.to_str()) {
+        hint.with_extension(ext);
+    }
+
+    let probed = get_probe()
+        .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
+        .ok()?;
+    let format = probed.format;
+    let track = format
+        .default_track()
+        .or_else(|| format.tracks().first())?;
+    let n_frames = track.codec_params.n_frames?;
+    let time_base = track.codec_params.time_base?;
+    let time = time_base.calc_time(n_frames);
+
+    Some(time.seconds as f64 + time.frac)
+}
+
 #[tauri::command]
 fn read_file_meta(file_path: String) -> Result<AudioItem, String> {
     let path = PathBuf::from(&file_path);
     let metadata = fs::metadata(&path).map_err(|e| e.to_string())?;
+    let duration = read_audio_duration(&path);
     
     Ok(AudioItem {
         id: format!("{:x}", md5::compute(&file_path)),
@@ -98,7 +128,7 @@ fn read_file_meta(file_path: String) -> Result<AudioItem, String> {
             .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0),
-        duration: None,
+        duration,
     })
 }
 
