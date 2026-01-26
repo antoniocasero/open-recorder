@@ -1,16 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { PlayerSidebar } from '@/components/PlayerSidebar'
 import { InsightsSidebar } from '@/components/InsightsSidebar'
 import { Footer } from '@/components/Footer'
 import { Action } from '@/components/RecommendedActions'
+import { SearchBar } from '@/components/SearchBar'
+import { TranscriptView } from '@/components/TranscriptView'
 import { scanFolderForAudio } from '@/lib/fs/commands'
 import { getLastFolder } from '@/lib/fs/config'
 import { readTranscript, summarizeTranscript } from '@/lib/transcription/commands'
 import { extractKeyTopics } from '@/lib/transcription/insights'
+import { transcriptToSegments } from '@/lib/transcription/segment'
 import { AudioItem } from '@/lib/types'
+import { TranscriptSegment } from '@/lib/transcription/types'
 
 export default function EditorPage() {
   const [recordings, setRecordings] = useState<AudioItem[]>([])
@@ -25,6 +29,10 @@ export default function EditorPage() {
     { id: '2', title: 'Share UX principles summary', description: 'Send key takeaways to design team', completed: false },
     { id: '3', title: 'Schedule follow‑up interview', description: 'Coordinate with HR and candidate', completed: true },
   ])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [transcriptSegments, setTranscriptSegments] = useState<TranscriptSegment[] | null>(null)
+  const [currentTime, setCurrentTime] = useState(0)
+  const playerSidebarRef = useRef<{ seek: (time: number) => void }>(null)
   const searchParams = useSearchParams()
   const recordingId = searchParams.get('recording')
 
@@ -48,6 +56,7 @@ export default function EditorPage() {
     async function loadInsights() {
       if (!selectedRecording) {
         setTranscript(null)
+        setTranscriptSegments(null)
         setSummary(null)
         setTopics([])
         return
@@ -56,6 +65,15 @@ export default function EditorPage() {
       const text = await readTranscript(selectedRecording.path)
       setTranscript(text)
       if (text) {
+        // Convert to segments for transcript view
+        const mockTranscript = {
+          text,
+          words: [],
+          duration: selectedRecording.duration || 120,
+          language: 'en'
+        }
+        const segments = transcriptToSegments(mockTranscript)
+        setTranscriptSegments(segments)
         // Extract key topics
         const extracted = extractKeyTopics(text)
         setTopics(extracted)
@@ -71,6 +89,7 @@ export default function EditorPage() {
           setLoadingSummary(false)
         }
       } else {
+        setTranscriptSegments(null)
         setTopics([])
         setSummary(null)
       }
@@ -110,27 +129,41 @@ export default function EditorPage() {
     }
   }
 
+  // Filter segments based on search query
+  const filteredSegments = transcriptSegments?.filter(segment =>
+    segment.text.toLowerCase().includes(searchQuery.toLowerCase())
+  ) ?? null
+
+  // Calculate total word count
+  const wordCount = transcriptSegments?.reduce((sum, segment) => {
+    return sum + segment.text.split(/\s+/).length
+  }, 0) ?? 0
+
+  // Handle seeking to a specific timestamp
+  const handleSeek = useCallback((time: number) => {
+    playerSidebarRef.current?.seek(time)
+  }, [])
+
   return (
     <>
       <div className="flex flex-1 overflow-hidden">
         {/* Left sidebar – Player */}
-        <PlayerSidebar recording={selectedRecording} />
+        <PlayerSidebar
+          ref={playerSidebarRef}
+          recording={selectedRecording}
+          onTimeUpdate={setCurrentTime}
+        />
 
         {/* Main column – Transcript */}
         <main className="flex-1 flex flex-col bg-slate-deep overflow-hidden border-r border-slate-border">
           {/* Header area with search and buttons */}
           <div className="h-16 px-6 border-b border-slate-border flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">
-                  search
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search transcript…"
-                  className="pl-10 pr-4 py-2 bg-slate-900/50 border border-slate-border rounded-lg text-sm text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-primary"
-                />
-              </div>
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search transcript…"
+              />
             </div>
             <div className="flex items-center gap-3">
               <button className="px-4 py-2 border border-slate-border text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-surface transition-colors">
@@ -144,16 +177,14 @@ export default function EditorPage() {
             </div>
           </div>
 
-          {/* Transcript placeholder */}
+          {/* Transcript view */}
           <div className="p-8 flex-1 overflow-auto">
-            <div className="max-w-3xl mx-auto">
-              <h2 className="text-lg font-semibold text-slate-200 mb-4">Transcript</h2>
-              <p className="text-slate-400">
-                Transcript content will appear here once a recording is selected and transcribed.
-                The text will be synchronized with the audio playback, allowing you to navigate by
-                clicking on words or phrases.
-              </p>
-            </div>
+            <TranscriptView
+              transcript={filteredSegments}
+              currentTime={currentTime}
+              onSeek={handleSeek}
+              searchQuery={searchQuery}
+            />
           </div>
         </main>
 
@@ -170,7 +201,7 @@ export default function EditorPage() {
       <Footer>
         <div className="flex items-center gap-6">
           <span className="text-[10px] font-bold text-slate-500 uppercase">
-            Word count: 0
+            Word count: {wordCount}
           </span>
           <span className="text-[10px] font-bold text-slate-500 uppercase">
             Language: EN‑US

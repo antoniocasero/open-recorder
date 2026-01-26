@@ -1,12 +1,17 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 
 import { AudioItem } from '@/lib/types'
 import { convertFileSrc } from '@tauri-apps/api/core'
 
+interface PlayerHandle {
+  seek: (time: number) => void
+}
+
 interface PlayerProps {
   recording?: AudioItem
+  onTimeUpdate?: (time: number) => void
 }
 
 function formatDuration(seconds?: number): string {
@@ -27,8 +32,15 @@ function formatDate(timestamp: number): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function Player({ recording }: PlayerProps) {
+export const Player = forwardRef<PlayerHandle, PlayerProps>(({ recording, onTimeUpdate }, ref) => {
   const audioRef = useRef<HTMLAudioElement>(null)
+  useImperativeHandle(ref, () => ({
+    seek: (time: number) => {
+      if (audioRef.current) {
+        audioRef.current.currentTime = time
+      }
+    }
+  }))
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -70,7 +82,9 @@ export function Player({ recording }: PlayerProps) {
   // Update current time during playback
   const handleTimeUpdate = () => {
     if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime)
+      const time = audioRef.current.currentTime
+      setCurrentTime(time)
+      onTimeUpdate?.(time)
     }
   }
 
@@ -257,4 +271,4 @@ export function Player({ recording }: PlayerProps) {
       </div>
     </div>
   )
-}
+});
