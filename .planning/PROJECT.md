@@ -19,25 +19,26 @@ Users can easily record, organize, and listen to audio recordings with a simple,
 - ✓ UI shows recording list with metadata (filename, date, size) — existing
 - ✓ App remembers last selected folder via persistent storage — existing
 - ✓ Basic UI components: Dashboard, Player, RecordingsList — existing
+- ✓ **TRAN-01**: User can transcribe a recording using OpenAI Whisper API — v1.0
+- ✓ **TRAN-02**: Transcribe button appears per recording in the list — v1.0
+- ✓ **TRAN-03**: Progress indicator (spinner + "Transcribing...") shows during transcription — v1.0
+- ✓ **TRAN-04**: Transcript appears in modal overlay with word-level timestamps — v1.0
+- ✓ **TRAN-05**: Transcript saved as `.txt` file alongside original audio file — v1.0
+- ✓ **TRAN-06**: Notification toast appears when transcription completes — v1.0
+- ✓ **TRAN-07**: API key provided via environment variable (`OPENAI_API_KEY`) — v1.0
+- ✓ **TRAN-08**: Error handling for missing API key, network errors, unsupported formats — v1.0
+- ✓ **TRAN-09**: Support for common audio formats (mp3, m4a, wav, etc.) — v1.0
+- ✓ **TRAN-10**: Auto language detection via Whisper API — v1.0
 
 ### Active
 
-- [ ] **TRAN-01**: User can transcribe a recording using OpenAI Whisper API
-- [ ] **TRAN-02**: Transcribe button appears per recording in the list
-- [ ] **TRAN-03**: Progress indicator (spinner + "Transcribing...") shows during transcription
-- [ ] **TRAN-04**: Transcript appears in modal overlay with word-level timestamps
-- [ ] **TRAN-05**: Transcript saved as `.txt` file alongside original audio file
-- [ ] **TRAN-06**: Notification toast appears when transcription completes
-- [ ] **TRAN-07**: API key provided via environment variable (`OPENAI_API_KEY`)
-- [ ] **TRAN-08**: Error handling for missing API key, network errors, unsupported formats
-- [ ] **TRAN-09**: Support for common audio formats (mp3, m4a, wav, etc.)
-- [ ] **TRAN-10**: Auto language detection via Whisper API
+None — planning next milestone
 
 ### Out of Scope
 
 - Audio editing (trim, cut, merge) — focus on transcription only
 - Cloud sync and sharing — local‑first application
-- Transcript editing within app — v1 only displays and saves
+
 - Language selection — auto‑detect via Whisper API
 - Audio format conversion — assume Whisper‑supported formats (mp3, m4a, wav, etc.)
 - Fixing existing tech debt (missing duration, static waveform, error swallowing) — deferred
@@ -48,6 +49,7 @@ Users can easily record, organize, and listen to audio recordings with a simple,
 - Tech debt identified but deferred per project direction
 - Uses Tauri for desktop integration, Next.js for frontend, Rust for backend
 - Already includes audio scanning, playback, and basic UI
+- Shipped v1.0 with transcription, batch processing, editing, search, export, AI summarization, and UI redesign (3 phases, 17 plans, 2.1 hours execution time)
 
 ## Constraints
 
@@ -62,11 +64,11 @@ Users can easily record, organize, and listen to audio recordings with a simple,
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Use OpenAI Whisper API | Faster implementation, no large model download, cost per minute acceptable | — Pending |
-| API key via environment variable | Simpler for initial release, avoids building settings UI | — Pending |
-| Save transcripts as `.txt` files | Easy to locate, no database overhead, portable | — Pending |
-| Button in list + modal display | Consistent with existing UI pattern, clear user flow | — Pending |
+| Use OpenAI Whisper API | Faster implementation, no large model download, cost per minute acceptable | ✓ Implemented (Phase 1) |
+| API key via environment variable | Simpler for initial release, avoids building settings UI | ✓ Implemented (Phase 1) |
+| Save transcripts as `.txt` files | Easy to locate, no database overhead, portable | ✓ Implemented (Phase 1) |
+| Button in list + modal display | Consistent with existing UI pattern, clear user flow | ✓ Implemented (Phase 1) |
 | Transcript editing saves to same sidecar .txt file pattern | Consistency with existing transcription output, no new file format | — Implemented 02-02 |
 
 ---
-*Last updated: 2026-01-24 after transcript editing implementation*
+*Last updated: 2026-01-26 after v1.0 milestone completion*
