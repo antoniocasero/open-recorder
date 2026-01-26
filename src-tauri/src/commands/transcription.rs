@@ -11,6 +11,8 @@ use async_openai::{
 };
 use tauri_plugin_http::reqwest::Error as ReqwestError;
 use serde::{Deserialize, Serialize};
+use serde::de::DeserializeOwned;
+use serde_json;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -31,6 +33,19 @@ pub struct Transcript {
     pub words: Vec<WordTimestamp>,
     pub duration: f32,
     pub language: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RecommendedAction {
+    pub title: String,
+    pub description: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TranscriptInsights {
+    pub summary: Option<String>,
+    pub actions: Option<Vec<RecommendedAction>>,
+    pub topics: Option<Vec<String>>,
 }
 
 fn is_supported_format(path: &PathBuf) -> bool {
@@ -169,6 +184,11 @@ pub async fn save_transcript(path: PathBuf, text: String) -> Result<(), String> 
     save_transcript_inner(path, text).await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn save_export(path: PathBuf, content: String) -> Result<(), String> {
+    std::fs::write(&path, content).map_err(|e| e.to_string())
+}
+
 async fn save_transcript_inner(path: PathBuf, text: String) -> Result<(), TranscriptionError> {
     // Validate path exists (audio file optional, but at least parent directory should exist)
     if let Some(parent) = path.parent() {
@@ -194,8 +214,11 @@ async fn read_transcript_inner(path: PathBuf) -> Result<String, TranscriptionErr
     // Get transcript file path
     let transcript_path = path.with_extension("txt");
     
+    info!("Reading transcript from: {:?}", transcript_path);
+    
     // Check if file exists
     if !transcript_path.exists() {
+        warn!("Transcript file not found: {:?}", transcript_path);
         return Err(TranscriptionError::FileNotFound(format!("Transcript file not found: {}", transcript_path.display())));
     }
     
@@ -203,12 +226,28 @@ async fn read_transcript_inner(path: PathBuf) -> Result<String, TranscriptionErr
     let content = std::fs::read_to_string(&transcript_path)
         .map_err(|e| TranscriptionError::FileError(e.to_string()))?;
     
+    info!("Read transcript of length {} chars", content.len());
     Ok(content)
 }
 
 #[tauri::command]
 pub async fn summarize_transcript(app: AppHandle, text: String) -> Result<String, String> {
     summarize_transcript_inner(app, text).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn recommend_actions(text: String) -> Result<Vec<RecommendedAction>, String> {
+    recommend_actions_inner(text).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn extract_key_topics(text: String) -> Result<Vec<String>, String> {
+    extract_key_topics_inner(text).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_transcript_insights(app: AppHandle, text: String) -> Result<TranscriptInsights, String> {
+    get_transcript_insights_inner(app, text).await.map_err(|e| e.to_string())
 }
 
 async fn summarize_transcript_inner(app: AppHandle, text: String) -> Result<String, TranscriptionError> {
@@ -219,26 +258,51 @@ async fn summarize_transcript_inner(app: AppHandle, text: String) -> Result<Stri
         ));
     }
 
-    // Compute hash of transcript text for caching
-    let hash = format!("{:x}", md5::compute(&text));
+    // Normalize text for consistent hashing (trim, collapse whitespace)
+    let normalized_text = text.trim();
+    // Compute hash of normalized transcript text for caching
+    let hash = format!("{:x}", md5::compute(normalized_text));
     
-    // Try to read from cache
-    if let Some(cached) = read_cache(&app, &hash).await? {
-        info!("Summary cache hit for hash: {}", hash);
-        return Ok(cached);
+    // Read existing cache (if any)
+    let existing = read_cache(&app, &hash).await?;
+    
+    // Check if summary exists in cache
+    if let Some(ref cached) = existing {
+        if let Some(ref summary) = cached.summary {
+            info!("Summary cache hit for hash: {}", hash);
+            return Ok(summary.clone());
+        }
+        warn!("Cached insights found but summary missing for hash: {}", hash);
     }
+    
     info!("Summary cache miss for hash: {}", hash);
     
     // Cache miss, call API
-    let summary = summarize_transcript_api(text).await?;
+    let summary = summarize_transcript_api(text.clone()).await?;
     
-    // Write to cache (ignore errors)
-    let _ = write_cache(&app, &hash, &summary).await;
+    // Merge with existing cache (preserve actions/topics if they exist)
+    let insights = match existing {
+        Some(mut cached) => {
+            // Update summary, keep existing actions/topics
+            cached.summary = Some(summary.clone());
+            cached
+        },
+        None => {
+            // No existing cache, create new with summary only
+            TranscriptInsights {
+                summary: Some(summary.clone()),
+                actions: None,
+                topics: None,
+            }
+        }
+    };
+    
+    let _ = write_cache(&app, &hash, &insights).await;
     
     Ok(summary)
 }
 
-async fn read_cache(app: &AppHandle, hash: &str) -> Result<Option<String>, TranscriptionError> {
+async fn read_cache(app: &AppHandle, hash: &str) -> Result<Option<TranscriptInsights>, TranscriptionError> {
     let cache_dir = app.path().local_data_dir().map_err(|e| {
         TranscriptionError::FileError(format!("Failed to get local data dir: {}", e))
     })?;
@@ -246,17 +310,40 @@ async fn read_cache(app: &AppHandle, hash: &str) -> Result<Option<String>, Trans
     let cache_file = summaries_dir.join(format!("{}.txt", hash));
     
     if !cache_file.exists() {
+        info!("Cache file does not exist: {:?}", cache_file);
         return Ok(None);
     }
     
+    info!("Reading cache file: {:?}", cache_file);
     match std::fs::read_to_string(&cache_file) {
-        Ok(content) => Ok(Some(content)),
-        Err(_) => Ok(None), // If can't read, treat as cache miss
+        Ok(content) => {
+            // Try to parse as JSON first
+            match serde_json::from_str::<TranscriptInsights>(&content) {
+                Ok(insights) => {
+                    info!("Successfully parsed JSON cache for hash: {}", hash);
+                    Ok(Some(insights))
+                },
+                Err(e) => {
+                    warn!("Failed to parse JSON cache for hash: {}: {}", hash, e);
+                    // Old format: plain text summary
+                    info!("Trying old plain text format for hash: {}", hash);
+                    Ok(Some(TranscriptInsights {
+                        summary: Some(content),
+                        actions: None,
+                        topics: None,
+                    }))
+                }
+            }
+        }
+        Err(e) => {
+            warn!("Failed to read cache file for hash: {}: {}", hash, e);
+            Ok(None) // If can't read, treat as cache miss
+        }
     }
 }
 
-async fn write_cache(app: &AppHandle, hash: &str, summary: &str) -> Result<(), TranscriptionError> {
-    info!("Writing summary cache for hash: {}", hash);
+async fn write_cache(app: &AppHandle, hash: &str, insights: &TranscriptInsights) -> Result<(), TranscriptionError> {
+    info!("Writing insights cache for hash: {}", hash);
     let cache_dir = app.path().local_data_dir().map_err(|e| {
         TranscriptionError::FileError(format!("Failed to get local data dir: {}", e))
     })?;
@@ -264,15 +351,20 @@ async fn write_cache(app: &AppHandle, hash: &str, summary: &str) -> Result<(), T
     
     // Create directory if it doesn't exist
     if !summaries_dir.exists() {
+        info!("Creating cache directory: {:?}", summaries_dir);
         std::fs::create_dir_all(&summaries_dir).map_err(|e| {
             TranscriptionError::FileError(format!("Failed to create cache directory: {}", e))
         })?;
     }
     
     let cache_file = summaries_dir.join(format!("{}.txt", hash));
-    std::fs::write(&cache_file, summary).map_err(|e| {
+    info!("Writing cache to: {:?}", cache_file);
+    let json = serde_json::to_string_pretty(insights)
+        .map_err(|e| TranscriptionError::FileError(format!("Failed to serialize insights: {}", e)))?;
+    std::fs::write(&cache_file, json).map_err(|e| {
         TranscriptionError::FileError(format!("Failed to write cache file: {}", e))
     })?;
+    info!("Cache written successfully for hash: {}", hash);
     
     Ok(())
 }
@@ -309,6 +401,176 @@ async fn summarize_transcript_api(text: String) -> Result<String, TranscriptionE
         .first()
         .and_then(|choice| choice.message.content.clone())
         .ok_or_else(|| TranscriptionError::TranscriptionFailed("No content in response".to_string()))
+}
+
+async fn recommend_actions_inner(text: String) -> Result<Vec<RecommendedAction>, TranscriptionError> {
+    if text.trim().is_empty() {
+        return Err(TranscriptionError::TranscriptionFailed(
+            "Transcript text is empty".to_string(),
+        ));
+    }
+
+    let api_key = std::env::var("OPENAI_API_KEY")
+        .map_err(|_| TranscriptionError::MissingApiKey)?;
+
+    let config = OpenAIConfig::new().with_api_key(&api_key);
+    let client = Client::with_config(config);
+
+    let prompt = format!(
+        "From the transcript below, generate 3-5 concise follow-up action items. Each title should be <= 7 words, description <= 16 words. Respond ONLY with a JSON array of objects with keys 'title' and 'description'. No extra text. Transcript:\n\n{}",
+        text
+    );
+
+    let request = CreateChatCompletionRequestArgs::default()
+        .model("gpt-3.5-turbo")
+        .messages(vec![ChatCompletionRequestMessage::User(ChatCompletionRequestUserMessage {
+            content: ChatCompletionRequestUserMessageContent::Text(prompt),
+            name: None,
+        })])
+        .build()
+        .map_err(|e| TranscriptionError::RequestError(e.to_string()))?;
+
+    let response = client
+        .chat()
+        .create(request)
+        .await
+        .map_err(|e| TranscriptionError::ApiError(e.to_string()))?;
+
+    let content = response
+        .choices
+        .first()
+        .and_then(|choice| choice.message.content.clone())
+        .ok_or_else(|| TranscriptionError::TranscriptionFailed("No content in response".to_string()))?;
+
+    parse_json_array::<Vec<RecommendedAction>>(&content)
+}
+
+async fn extract_key_topics_inner(text: String) -> Result<Vec<String>, TranscriptionError> {
+    if text.trim().is_empty() {
+        return Err(TranscriptionError::TranscriptionFailed(
+            "Transcript text is empty".to_string(),
+        ));
+    }
+
+    let api_key = std::env::var("OPENAI_API_KEY")
+        .map_err(|_| TranscriptionError::MissingApiKey)?;
+
+    let config = OpenAIConfig::new().with_api_key(&api_key);
+    let client = Client::with_config(config);
+
+    let prompt = format!(
+        "Extract 6-10 key topics from the transcript below. Return short tags (1-3 words), no sentences, no verbs. Respond ONLY with a JSON array of strings. No extra text. Transcript:\n\n{}",
+        text
+    );
+
+    let request = CreateChatCompletionRequestArgs::default()
+        .model("gpt-3.5-turbo")
+        .messages(vec![ChatCompletionRequestMessage::User(ChatCompletionRequestUserMessage {
+            content: ChatCompletionRequestUserMessageContent::Text(prompt),
+            name: None,
+        })])
+        .build()
+        .map_err(|e| TranscriptionError::RequestError(e.to_string()))?;
+
+    let response = client
+        .chat()
+        .create(request)
+        .await
+        .map_err(|e| TranscriptionError::ApiError(e.to_string()))?;
+
+    let content = response
+        .choices
+        .first()
+        .and_then(|choice| choice.message.content.clone())
+        .ok_or_else(|| TranscriptionError::TranscriptionFailed("No content in response".to_string()))?;
+
+    parse_json_array::<Vec<String>>(&content)
+}
+
+async fn get_transcript_insights_inner(app: AppHandle, text: String) -> Result<TranscriptInsights, TranscriptionError> {
+    // Validate input
+    if text.trim().is_empty() {
+        return Err(TranscriptionError::TranscriptionFailed(
+            "Transcript text is empty".to_string(),
+        ));
+    }
+
+    // Normalize text for consistent hashing (trim, collapse whitespace)
+    let normalized_text = text.trim();
+    // Compute hash of normalized transcript text for caching
+    let hash = format!("{:x}", md5::compute(normalized_text));
+    
+    // Read existing cache (if any)
+    let existing = read_cache(&app, &hash).await?;
+    
+    // Determine which fields need generation
+    let needs_summary = existing.as_ref().and_then(|c| c.summary.as_ref()).is_none();
+    let needs_actions = existing.as_ref().and_then(|c| c.actions.as_ref()).is_none();
+    let needs_topics = existing.as_ref().and_then(|c| c.topics.as_ref()).is_none();
+    
+    // If all fields exist, return cached insights
+    if !needs_summary && !needs_actions && !needs_topics {
+        info!("All insights cache hit for hash: {}", hash);
+        return Ok(existing.unwrap());
+    }
+    
+    info!("Generating missing insights for hash: {} (summary: {}, actions: {}, topics: {})", 
+          hash, needs_summary, needs_actions, needs_topics);
+    
+    // Generate missing fields in parallel
+    let (summary_result, actions_result, topics_result) = tokio::try_join!(
+        async {
+            if needs_summary {
+                summarize_transcript_api(text.clone()).await
+            } else {
+                // Use existing summary
+                Ok::<String, TranscriptionError>(existing.as_ref().unwrap().summary.clone().unwrap())
+            }
+        },
+        async {
+            if needs_actions {
+                recommend_actions_inner(text.clone()).await
+            } else {
+                // Use existing actions
+                Ok::<Vec<RecommendedAction>, TranscriptionError>(existing.as_ref().unwrap().actions.clone().unwrap())
+            }
+        },
+        async {
+            if needs_topics {
+                extract_key_topics_inner(text.clone()).await
+            } else {
+                // Use existing topics
+                Ok::<Vec<String>, TranscriptionError>(existing.as_ref().unwrap().topics.clone().unwrap())
+            }
+        },
+    )?;
+    
+    // Build insights (merge with existing)
+    let insights = TranscriptInsights {
+        summary: Some(summary_result),
+        actions: Some(actions_result),
+        topics: Some(topics_result),
+    };
+    
+    // Write to cache
+    let _ = write_cache(&app, &hash, &insights).await;
+    
+    Ok(insights)
+}
+
+fn parse_json_array<T: DeserializeOwned>(content: &str) -> Result<T, TranscriptionError> {
+    let trimmed = content.trim();
+    if let Ok(parsed) = serde_json::from_str::<T>(trimmed) {
+        return Ok(parsed);
+    }
+
+    if let (Some(start), Some(end)) = (trimmed.find('['), trimmed.rfind(']')) {
+        let slice = &trimmed[start..=end];
+        return serde_json::from_str::<T>(slice)
+            .map_err(|e| TranscriptionError::TranscriptionFailed(format!("Invalid JSON: {}", e)));
+    }
+
+    Err(TranscriptionError::TranscriptionFailed("Invalid JSON: no array found".to_string()))
 }
 
 #[cfg(test)]

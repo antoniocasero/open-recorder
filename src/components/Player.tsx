@@ -14,23 +14,7 @@ interface PlayerProps {
   onTimeUpdate?: (time: number) => void
 }
 
-function formatDuration(seconds?: number): string {
-  if (!seconds) return '--:--'
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
 
-function formatDate(timestamp: number): string {
-  const date = new Date(timestamp * 1000)
-  const today = new Date()
-  const isToday = date.toDateString() === today.toDateString()
-  
-  if (isToday) {
-    return `Today at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
-  }
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
 
 export const Player = forwardRef<PlayerHandle, PlayerProps>(({ recording, onTimeUpdate }, ref) => {
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -185,17 +169,16 @@ export const Player = forwardRef<PlayerHandle, PlayerProps>(({ recording, onTime
 
   if (!recording) {
     return (
-      <div className="bg-[#252525] rounded-lg border border-[#333] p-6 flex items-center justify-center h-[400px]">
+      <div className="flex items-center justify-center">
         <p className="text-gray-400 text-sm">Select a recording to play</p>
       </div>
     )
   }
 
   const audioSrc = recording ? convertFileSrc(recording.path) : ''
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
-    <div className="bg-[#252525] rounded-lg border border-[#333] p-6">
+    <>
       <audio
         ref={audioRef}
         src={audioSrc}
@@ -206,69 +189,44 @@ export const Player = forwardRef<PlayerHandle, PlayerProps>(({ recording, onTime
         onError={handleError}
       />
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold">{recording.name}</h2>
-        <p className="text-sm text-gray-400 mt-1">{formatDate(recording.mtime)}</p>
-        {error && (
-          <p className="text-sm text-red-400 mt-2">Error: {error}</p>
-        )}
-      </div>
+      {/* Error display */}
+      {error && (
+        <p className="text-sm text-red-400 mb-2">Error: {error}</p>
+      )}
 
-      <div className="flex flex-col items-center gap-6">
+      {/* Play Controls */}
+      <div className="flex items-center justify-center gap-4">
+        {/* Replay 10s */}
+        <button
+          onClick={() => handleSkip(-10)}
+          className="text-slate-400 hover:text-slate-100 transition-colors"
+          title="Replay 10 seconds"
+        >
+          <span className="material-symbols-outlined text-2xl">replay_10</span>
+        </button>
+
         {/* Play/Pause Button */}
-        <div className="flex items-center justify-center gap-4">
-          {/* Replay 10s */}
-          <button
-            onClick={() => handleSkip(-10)}
-            className="text-slate-400 hover:text-slate-100 transition-colors"
-          >
-            <span className="material-symbols-outlined text-2xl">replay_10</span>
-          </button>
+        <button
+          onClick={togglePlayPause}
+          className="size-12 rounded-full bg-indigo-primary text-white hover:scale-105 transition-transform flex items-center justify-center"
+          title={isPlaying ? 'Pause' : 'Play'}
+        >
+          {isPlaying ? (
+            <span className="material-symbols-outlined">pause</span>
+          ) : (
+            <span className="material-symbols-outlined">play_arrow</span>
+          )}
+        </button>
 
-          {/* Play/Pause Button */}
-          <button
-            onClick={togglePlayPause}
-            className="size-12 rounded-full bg-indigo-primary text-white hover:scale-105 transition-transform flex items-center justify-center"
-          >
-            {isPlaying ? (
-              <span className="material-symbols-outlined">pause</span>
-            ) : (
-              <span className="material-symbols-outlined">play_arrow</span>
-            )}
-          </button>
-
-          {/* Forward 10s */}
-          <button
-            onClick={() => handleSkip(10)}
-            className="text-slate-400 hover:text-slate-100 transition-colors"
-          >
-            <span className="material-symbols-outlined text-2xl">forward_10</span>
-          </button>
-        </div>
-
-        {/* Waveform */}
-        <div className="w-full flex items-center justify-center gap-0.5 h-24">
-          {Array.from({ length: 80 }).map((_, i) => {
-            const height = Math.random() * 60 + 20
-            const isPlayed = (i / 80) * 100 < progress
-            return (
-              <div
-                key={i}
-                className={`w-1 rounded-full transition-colors ${
-                  isPlayed ? 'bg-orange-500' : 'bg-gray-600'
-                }`}
-                style={{ height: `${height}%` }}
-              />
-            )
-          })}
-        </div>
-
-        {/* Time */}
-        <div className="w-full flex justify-between text-sm text-gray-400">
-          <span>{formatDuration(currentTime)}</span>
-          <span>{formatDuration(duration || recording.duration)}</span>
-        </div>
+        {/* Forward 10s */}
+        <button
+          onClick={() => handleSkip(10)}
+          className="text-slate-400 hover:text-slate-100 transition-colors"
+          title="Forward 10 seconds"
+        >
+          <span className="material-symbols-outlined text-2xl">forward_10</span>
+        </button>
       </div>
-    </div>
+    </>
   )
 });

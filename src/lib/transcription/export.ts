@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/core'
+import { save } from '@tauri-apps/plugin-dialog'
 import { Transcript, WordTimestamp } from './types'
 
 /**
@@ -101,7 +103,31 @@ export function toJSON(transcript: Transcript): string {
 /**
  * Downloads a string as a file in the browser.
  */
-export function downloadFile(content: string, filename: string) {
+function getFileExtension(filename: string): string | null {
+  const parts = filename.split('.')
+  if (parts.length < 2) return null
+  return parts[parts.length - 1]?.toLowerCase() || null
+}
+
+function isTauriEnvironment(): boolean {
+  return typeof window !== 'undefined' && '__TAURI__' in window
+}
+
+export async function downloadFile(content: string, filename: string) {
+  if (isTauriEnvironment()) {
+    const extension = getFileExtension(filename)
+    const filters = extension
+      ? [{ name: extension.toUpperCase(), extensions: [extension] }]
+      : undefined
+    const path = await save({
+      defaultPath: filename,
+      filters
+    })
+    if (!path) return
+    await invoke('save_export', { path, content })
+    return
+  }
+
   const blob = new Blob([content], { type: 'text/plain' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

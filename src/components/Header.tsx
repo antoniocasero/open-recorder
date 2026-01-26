@@ -52,12 +52,7 @@ export function Header() {
       </nav>
 
       {/* User area */}
-      <div className="flex items-center gap-4">
-        {pathname === '/library' && (
-          <button className="px-4 py-2 bg-indigo-primary text-slate-100 text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors">
-            New Recording
-          </button>
-        )}
+      <div className="flex items-center gap-4 min-w-[160px] justify-end">
         <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden">
           <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full"></div>
         </div>

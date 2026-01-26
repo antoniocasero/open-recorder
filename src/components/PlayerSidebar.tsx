@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef } from 'react'
+import { forwardRef, useMemo } from 'react'
 import { AudioItem } from '@/lib/types'
 import { Player } from './Player'
 
@@ -10,6 +10,7 @@ interface PlayerSidebarHandle {
 
 interface PlayerSidebarProps {
   recording: AudioItem | null
+  currentTime?: number
   onTimeUpdate?: (time: number) => void
 }
 
@@ -30,8 +31,15 @@ function formatDate(timestamp: number): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function formatDuration(seconds?: number): string {
+  if (!seconds) return '--:--'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
 export const PlayerSidebar = forwardRef<PlayerSidebarHandle, PlayerSidebarProps>(
-  ({ recording, onTimeUpdate }, ref) => {
+  ({ recording, currentTime = 0, onTimeUpdate }, ref) => {
     // If no recording, show placeholder
     if (!recording) {
       return (
@@ -41,10 +49,19 @@ export const PlayerSidebar = forwardRef<PlayerSidebarHandle, PlayerSidebarProps>
       )
     }
 
-    // Generate waveform bars (20–100% height, first 9 active)
-    const bars = Array.from({ length: 18 }, (_, i) => ({
-      height: Math.floor(Math.random() * 80) + 20, // 20–100%
-      active: i < 9,
+    // Generate waveform bars (20–100% height, active based on progress)
+    const duration = recording.duration || 0
+    const progress = duration > 0 ? currentTime / duration : 0
+    const activeBars = Math.floor(progress * 18)
+
+    const barHeights = useMemo(() => 
+      Array.from({ length: 18 }, () => Math.floor(Math.random() * 80) + 20),
+      [recording.id]
+    )
+
+    const bars = barHeights.map((height, i) => ({
+      height,
+      active: i < activeBars,
     }))
 
     return (
@@ -81,8 +98,8 @@ export const PlayerSidebar = forwardRef<PlayerSidebarHandle, PlayerSidebarProps>
             ))}
           </div>
           <div className="flex justify-between text-sm text-slate-400">
-            <span>12:45</span>
-            <span>45:12</span>
+            <span>{formatDuration(currentTime)}</span>
+            <span>{formatDuration(duration)}</span>
           </div>
         </div>
 

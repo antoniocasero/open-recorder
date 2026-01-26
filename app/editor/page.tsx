@@ -11,12 +11,12 @@ import { SearchBar } from '@/components/SearchBar'
 import { TranscriptView } from '@/components/TranscriptView'
 import { scanFolderForAudio } from '@/lib/fs/commands'
 import { getLastFolder } from '@/lib/fs/config'
-import { readTranscript, summarizeTranscript, saveTranscript } from '@/lib/transcription/commands'
-import { extractKeyTopics } from '@/lib/transcription/insights'
+import { readTranscript, summarizeTranscript, recommendActions, extractKeyTopicsAI, getTranscriptInsights } from '@/lib/transcription/commands'
+import { extractKeyTopics, extractRecommendedActions, normalizeTopics } from '@/lib/transcription/insights'
 import { transcriptToSegments } from '@/lib/transcription/segment'
 import { downloadFile } from '@/lib/transcription/export'
 import { AudioItem } from '@/lib/types'
-import { TranscriptSegment } from '@/lib/transcription/types'
+import { TranscriptSegment, Transcript } from '@/lib/transcription/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,18 +30,13 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
   const [loadingTranscript, setLoadingTranscript] = useState(false)
   const [recordingsLoaded, setRecordingsLoaded] = useState(false)
   const [topics, setTopics] = useState<string[]>([])
-  const [actions] = useState<Action[]>([
-    { id: '1', title: "Review Sarah's portfolio links", description: 'Check UX design examples and case studies', completed: false },
-    { id: '2', title: 'Share UX principles summary', description: 'Send key takeaways to design team', completed: false },
-    { id: '3', title: 'Schedule follow‑up interview', description: 'Coordinate with HR and candidate', completed: true },
-  ])
+  const [actions, setActions] = useState<Action[]>([])
+
   const [searchQuery, setSearchQuery] = useState('')
   const [transcriptSegments, setTranscriptSegments] = useState<TranscriptSegment[] | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const [showExportDropdown, setShowExportDropdown] = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [editMode, setEditMode] = useState(false)
-  const [editedTranscript, setEditedTranscript] = useState<string>('')
   const playerSidebarRef = useRef<{ seek: (time: number) => void }>(null)
 
 
@@ -68,15 +63,19 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
         setTranscriptSegments(null)
         setSummary(null)
         setTopics([])
+        setActions([])
         setLoadingTranscript(false)
         return
       }
        // Load transcript text from sidecar .txt file
-       setLoadingTranscript(true)
-       try {
-         const text = await readTranscript(selectedRecording.path)
-         setTranscript(text)
-         if (text) {
+        setLoadingTranscript(true)
+        try {
+          console.log(`Reading transcript for: ${selectedRecording.path}`)
+          const startTime = Date.now()
+          const text = await readTranscript(selectedRecording.path)
+          console.log(`Transcript read in ${Date.now() - startTime}ms, length: ${text?.length || 0} chars`)
+          setTranscript(text)
+          if (text) {
            // Convert to segments for transcript view
            const mockTranscript = {
              text,
@@ -86,28 +85,110 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
            }
            const segments = transcriptToSegments(mockTranscript)
            setTranscriptSegments(segments)
-           // Extract key topics
-           const extracted = extractKeyTopics(text)
-           setTopics(extracted)
-           // Generate AI summary if text is not empty
-           setLoadingSummary(true)
-           try {
-             const result = await summarizeTranscript(text)
-             setSummary(result)
-           } catch (error) {
-             console.warn('Could not generate AI summary:', error)
-             // Keep summary as null (component will show placeholder)
-           } finally {
-             setLoadingSummary(false)
-           }
-         } else {
-           setTranscriptSegments(null)
-           setTopics([])
-           setSummary(null)
-         }
-       } finally {
-         setLoadingTranscript(false)
-       }
+             // Try unified insights first (cached, parallel generation)
+            try {
+              console.log('Getting unified transcript insights...')
+              const startTime = Date.now()
+              const insights = await getTranscriptInsights(text)
+              console.log(`Unified insights received in ${Date.now() - startTime}ms`, {
+                hasSummary: !!insights.summary,
+                hasActions: !!insights.actions,
+                hasTopics: !!insights.topics,
+                topicsCount: insights.topics?.length || 0,
+                actionsCount: insights.actions?.length || 0
+              })
+              
+              if (insights.topics) {
+                setTopics(normalizeTopics(insights.topics))
+              }
+              if (insights.summary) {
+                setSummary(insights.summary)
+              }
+              if (insights.actions) {
+                const derivedActions = insights.actions.length > 0
+                  ? insights.actions
+                  : extractRecommendedActions(text)
+                setActions(
+                  derivedActions.map((action, index) => ({
+                    id: `action-${index + 1}`,
+                    title: action.title,
+                    description: action.description,
+                    completed: false,
+                  }))
+                )
+              }
+              // If any field missing (shouldn't happen), fall through to separate generation
+              if (insights.topics && insights.summary && insights.actions) {
+                // All fields present, we're done
+                setLoadingSummary(false)
+                return
+              }
+             } catch (error) {
+              console.warn('Could not generate unified insights:', error)
+              console.log('Falling back to separate AI calls')
+              // Fall back to separate AI calls
+            }
+            
+             // Generate AI summary if text is not empty (fallback if unified failed or missing fields)
+            setLoadingSummary(true)
+            try {
+              console.log('Falling back to separate summary generation...')
+              const startTime = Date.now()
+              const result = await summarizeTranscript(text)
+              console.log(`Summary generated in ${Date.now() - startTime}ms`)
+              setSummary(result)
+            } catch (error) {
+              console.warn('Could not generate AI summary:', error)
+              // Keep summary as null (component will show placeholder)
+            } finally {
+              setLoadingSummary(false)
+            }
+
+            // Extract key topics (fallback if unified failed or missing fields)
+            try {
+              console.log('Falling back to separate topics generation...')
+              const startTime = Date.now()
+              const aiTopics = await extractKeyTopicsAI(text)
+              console.log(`Topics generated in ${Date.now() - startTime}ms`)
+              setTopics(normalizeTopics(aiTopics))
+            } catch (error) {
+              console.warn('Could not generate AI key topics:', error)
+              const extracted = extractKeyTopics(text)
+              setTopics(normalizeTopics(extracted))
+            }
+
+            // Generate AI actions (fallback if unified failed or missing fields)
+            try {
+              console.log('Falling back to separate actions generation...')
+              const startTime = Date.now()
+              const aiActions = await recommendActions(text)
+              console.log(`Actions generated in ${Date.now() - startTime}ms`)
+              const derivedActions = aiActions.length > 0
+                ? aiActions
+                : extractRecommendedActions(text)
+
+              setActions(
+                derivedActions.map((action, index) => ({
+                  id: `action-${index + 1}`,
+                  title: action.title,
+                  description: action.description,
+                  completed: false,
+                }))
+              )
+            } catch (error) {
+              console.warn('Could not generate AI actions:', error)
+              const fallback = extractRecommendedActions(summary || text)
+              setActions(fallback)
+            }
+          } else {
+            setTranscriptSegments(null)
+            setTopics([])
+            setSummary(null)
+            setActions([])
+          }
+        } finally {
+          setLoadingTranscript(false)
+        }
     }
     loadInsights()
   }, [selectedRecording])
@@ -163,14 +244,17 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
   }, [])
 
   // Export functions
-  const handleExportTXT = () => {
+  const handleExportTXT = async () => {
     if (!transcript) return
     const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.txt`
-    downloadFile(transcript, filename)
-    setShowExportDropdown(false)
+    try {
+      await downloadFile(transcript, filename)
+    } finally {
+      setShowExportDropdown(false)
+    }
   }
 
-  const handleExportSRT = () => {
+  const handleExportSRT = async () => {
     if (!transcriptSegments || transcriptSegments.length === 0) return
     // Generate SRT from segments
     let srtContent = ''
@@ -187,11 +271,14 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
       srtContent += `${segment.text}\n\n`
     })
     const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.srt`
-    downloadFile(srtContent, filename)
-    setShowExportDropdown(false)
+    try {
+      await downloadFile(srtContent, filename)
+    } finally {
+      setShowExportDropdown(false)
+    }
   }
 
-  const handleExportVTT = () => {
+  const handleExportVTT = async () => {
     if (!transcriptSegments || transcriptSegments.length === 0) return
     // Generate VTT from segments
     let vttContent = 'WEBVTT\n\n'
@@ -208,11 +295,14 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
       vttContent += `${segment.text}\n\n`
     })
     const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.vtt`
-    downloadFile(vttContent, filename)
-    setShowExportDropdown(false)
+    try {
+      await downloadFile(vttContent, filename)
+    } finally {
+      setShowExportDropdown(false)
+    }
   }
 
-  const handleExportJSON = () => {
+  const handleExportJSON = async () => {
     if (!transcript) return
     const jsonContent = JSON.stringify({
       transcript,
@@ -224,49 +314,14 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
       }
     }, null, 2)
     const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.json`
-    downloadFile(jsonContent, filename)
-    setShowExportDropdown(false)
-  }
-
-  // Edit functions
-  const handleEdit = () => {
-    setEditMode(true)
-    setEditedTranscript(transcript || '')
-  }
-
-  const handleSaveEdit = async () => {
-    if (!selectedRecording || !editedTranscript.trim()) return
     try {
-      // Save to file
-      await saveTranscript(selectedRecording.path, editedTranscript)
-      // Update local state
-      setTranscript(editedTranscript)
-      // Update segments (recreate from edited text)
-      if (selectedRecording.duration) {
-        const mockTranscript = {
-          text: editedTranscript,
-          words: [],
-          duration: selectedRecording.duration || 120,
-          language: 'en'
-        }
-        const segments = transcriptToSegments(mockTranscript)
-        setTranscriptSegments(segments)
-        // Extract key topics from edited text
-        const extracted = extractKeyTopics(editedTranscript)
-        setTopics(extracted)
-      }
-      setEditMode(false)
-      // Show success toast (optional)
-    } catch (error) {
-      console.error('Failed to save transcript:', error)
-      // Show error toast (optional)
+      await downloadFile(jsonContent, filename)
+    } finally {
+      setShowExportDropdown(false)
     }
   }
 
-  const handleCancelEdit = () => {
-    setEditMode(false)
-    setEditedTranscript('')
-  }
+
 
   return (
     <div className="flex flex-col h-full">
@@ -296,48 +351,30 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
             <PlayerSidebar
               ref={playerSidebarRef}
               recording={selectedRecording}
+              currentTime={currentTime}
               onTimeUpdate={setCurrentTime}
             />
 
             {/* Main column – Transcript */}
             <main className="flex-1 flex flex-col bg-slate-deep overflow-hidden border-r border-slate-border">
-              {/* Header area with search and buttons */}
-              <div className="h-16 px-6 border-b border-slate-border flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <SearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Search transcript…"
-                  />
-                </div>
-                 <div className="flex items-center gap-3 relative">
-                   {editMode ? (
-                     <>
-                       <button
-                         onClick={handleCancelEdit}
-                         className="px-4 py-2 border border-slate-border text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-surface transition-colors"
-                       >
-                         <span className="material-symbols-outlined align-middle mr-2">close</span>
-                         Cancel
-                       </button>
-                       <button
-                         onClick={handleSaveEdit}
-                         className="px-4 py-2 bg-indigo-primary text-slate-100 text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
-                       >
-                         <span className="material-symbols-outlined align-middle mr-2">save</span>
-                         Save
-                        </button>
-                      </>
-                    ) : (
-                     <button
-                       onClick={handleEdit}
-                       className="px-4 py-2 border border-slate-border text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-surface transition-colors"
-                     >
-                       <span className="material-symbols-outlined align-middle mr-2">edit</span>
-                       Edit
-                           </button>
-                        </div>
-                       )}
+               {/* Header area with search and buttons */}
+               <div className="h-16 px-6 border-b border-slate-border flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                   <SearchBar
+                     value={searchQuery}
+                     onChange={setSearchQuery}
+                     placeholder="Search transcript…"
+                   />
+                 </div>
+                 <div className="flex items-center gap-3">
+                   <button 
+                     onClick={() => setShowModal(true)}
+                     className="px-4 py-2 border border-slate-border text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-surface transition-colors"
+                   >
+                     <span className="material-symbols-outlined align-middle mr-2">edit</span>
+                     Edit
+                   </button>
+                   
                    {/* Export dropdown */}
                    <div className="relative">
                      <button
@@ -379,11 +416,12 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
                          >
                            <span className="material-symbols-outlined text-base">data_object</span>
                            Export as JSON
-                          </button>
-                      )}
+                         </button>
+                       </div>
+                     )}
                    </div>
                  </div>
-              </div>
+               </div>
 
               {/* Transcript view */}
               <div className="p-8 flex-1 overflow-auto">
@@ -393,18 +431,6 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
                     <div className="h-4 bg-slate-800 rounded animate-pulse w-5/6"></div>
                     <div className="h-4 bg-slate-800 rounded animate-pulse w-4/6"></div>
                     <div className="h-4 bg-slate-800 rounded animate-pulse w-2/3"></div>
-                  </div>
-                 ) : editMode ? (
-                   <div className="max-w-3xl mx-auto">
-                     <textarea
-                       className="w-full h-[calc(100vh-300px)] bg-slate-900 border border-slate-border rounded-lg p-4 text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-1 focus:ring-indigo-primary"
-                       value={editedTranscript}
-                       onChange={(e) => setEditedTranscript(e.target.value)}
-                       autoFocus
-                     />
-                     <div className="mt-4 text-xs text-slate-500">
-                       Edit the transcript text. Press Save to save changes.
-                     </div>
                    </div>
                  ) : (
                    <TranscriptView
@@ -445,7 +471,91 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
           </span>
         </div>
       </Footer>
-    </>
+      {showModal && transcript && selectedRecording && (
+        <TranscriptionModal
+          transcript={{
+            text: transcript,
+            words: [], // We don't have word-level timestamps
+            duration: selectedRecording.duration || 0,
+            language: 'en'
+          }}
+          audioPath={selectedRecording.path}
+          onSaveTranscript={(updatedTranscript) => {
+            setTranscript(updatedTranscript.text);
+            // Re-segment
+            const mockTranscript = {
+              text: updatedTranscript.text,
+              words: [],
+              duration: selectedRecording.duration || 120,
+              language: 'en'
+            };
+            const segments = transcriptToSegments(mockTranscript);
+            setTranscriptSegments(segments);
+            // Update topics, actions, and summary with unified insights
+            void (async () => {
+              // Clear summary while we regenerate
+              setSummary(null)
+              
+              try {
+                const insights = await getTranscriptInsights(updatedTranscript.text)
+                
+                if (insights.topics) {
+                  setTopics(normalizeTopics(insights.topics))
+                }
+                if (insights.summary) {
+                  setSummary(insights.summary)
+                }
+                if (insights.actions) {
+                  setActions(
+                    insights.actions.map((action, index) => ({
+                      id: `action-${index + 1}`,
+                      title: action.title,
+                      description: action.description,
+                      completed: false,
+                    }))
+                  )
+                }
+                // If any field missing, fall through to separate generation
+                if (insights.topics && insights.summary && insights.actions) {
+                  // All fields present, we're done
+                  return
+                }
+              } catch (error) {
+                console.warn('Could not generate unified insights:', error)
+                // Fall back to separate AI calls
+              }
+              
+              // Fallback: separate generation for missing fields
+              try {
+                const aiTopics = await extractKeyTopicsAI(updatedTranscript.text)
+                setTopics(normalizeTopics(aiTopics))
+              } catch (error) {
+                const extracted = extractKeyTopics(updatedTranscript.text)
+                setTopics(normalizeTopics(extracted))
+              }
+              try {
+                const aiActions = await recommendActions(updatedTranscript.text)
+                setActions(
+                  aiActions.map((action, index) => ({
+                    id: `action-${index + 1}`,
+                    title: action.title,
+                    description: action.description,
+                    completed: false,
+                  }))
+                )
+              } catch (error) {
+                const fallback = extractRecommendedActions(updatedTranscript.text)
+                setActions(fallback)
+              }
+              // Summary will remain null (already cleared) or could be generated via summarizeTranscript
+              // but we'll leave it null for now since user edited transcript
+            })()
+
+          }}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </div>
   )
 }
 

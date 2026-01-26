@@ -146,8 +146,12 @@ pub fn run() {
         commands::transcription::transcribe_audio,
         commands::transcription::transcribe_audio_batch,
         commands::transcription::save_transcript,
+        commands::transcription::save_export,
         commands::transcription::read_transcript,
-        commands::transcription::summarize_transcript
+        commands::transcription::summarize_transcript,
+        commands::transcription::recommend_actions,
+        commands::transcription::extract_key_topics,
+        commands::transcription::get_transcript_insights
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

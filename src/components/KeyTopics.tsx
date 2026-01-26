@@ -15,7 +15,7 @@ export function KeyTopics({ topics }: KeyTopicsProps) {
               key={idx}
               className="px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-[11px] text-slate-300"
             >
-              {topic}
+              {topic.startsWith('#') ? topic : `#${topic}`}
             </span>
           ))
         ) : (

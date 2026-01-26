@@ -62,3 +62,26 @@ export async function readTranscript(audioPath: string): Promise<string | null> 
 export async function summarizeTranscript(text: string): Promise<string> {
   return invoke<string>('summarize_transcript', { text })
 }
+
+export interface RecommendedAction {
+  title: string
+  description: string
+}
+
+export async function recommendActions(text: string): Promise<RecommendedAction[]> {
+  return invoke<RecommendedAction[]>('recommend_actions', { text })
+}
+
+export async function extractKeyTopicsAI(text: string): Promise<string[]> {
+  return invoke<string[]>('extract_key_topics', { text })
+}
+
+export interface TranscriptInsights {
+  summary?: string
+  actions?: RecommendedAction[]
+  topics?: string[]
+}
+
+export async function getTranscriptInsights(text: string): Promise<TranscriptInsights> {
+  return invoke<TranscriptInsights>('get_transcript_insights', { text })
+}

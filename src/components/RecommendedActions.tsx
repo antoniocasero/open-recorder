@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export interface Action {
   id: string
@@ -13,29 +13,14 @@ interface RecommendedActionsProps {
   actions?: Action[]
 }
 
-const defaultActions: Action[] = [
-  {
-    id: '1',
-    title: "Review Sarah's portfolio links",
-    description: 'Check UX design examples and case studies',
-    completed: false,
-  },
-  {
-    id: '2',
-    title: 'Share UX principles summary',
-    description: 'Send key takeaways to design team',
-    completed: false,
-  },
-  {
-    id: '3',
-    title: 'Schedule follow‑up interview',
-    description: 'Coordinate with HR and candidate',
-    completed: true,
-  },
-]
-
 export function RecommendedActions({ actions }: RecommendedActionsProps) {
-  const [items, setItems] = useState<Action[]>(actions || defaultActions)
+  const [items, setItems] = useState<Action[]>(actions ?? [])
+
+  useEffect(() => {
+    if (actions) {
+      setItems(actions)
+    }
+  }, [actions])
 
   const toggleCompleted = (id: string) => {
     setItems(prev =>
@@ -61,48 +46,52 @@ export function RecommendedActions({ actions }: RecommendedActionsProps) {
 
       {/* Actions list */}
       <div className="space-y-2">
-        {items.map(item => (
-          <div
-            key={item.id}
-            className="bg-slate-900/40 p-3 rounded-xl border border-slate-border/50 hover:border-indigo-primary/30 transition-colors cursor-pointer group"
-            onClick={() => toggleCompleted(item.id)}
-          >
-            <div className="flex items-start gap-3">
-              {/* Checkbox */}
-              <div className="flex-shrink-0">
-                <div
-                  className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                    item.completed
-                      ? 'bg-indigo-primary border-indigo-primary'
-                      : 'border-slate-500 group-hover:border-slate-400'
-                  }`}
-                >
-                  {item.completed && (
-                    <span className="material-symbols-outlined text-xs text-white">
-                      check
-                    </span>
-                  )}
+        {items.length > 0 ? (
+          items.map(item => (
+            <div
+              key={item.id}
+              className="bg-slate-900/40 p-3 rounded-xl border border-slate-border/50 hover:border-indigo-primary/30 transition-colors cursor-pointer group"
+              onClick={() => toggleCompleted(item.id)}
+            >
+              <div className="flex items-start gap-3">
+                {/* Checkbox */}
+                <div className="flex-shrink-0">
+                  <div
+                    className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                      item.completed
+                        ? 'bg-indigo-primary border-indigo-primary'
+                        : 'border-slate-500 group-hover:border-slate-400'
+                    }`}
+                  >
+                    {item.completed && (
+                      <span className="material-symbols-outlined text-xs text-white">
+                        check
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <h5
+                    className={`text-[13px] font-medium ${
+                      item.completed
+                        ? 'text-slate-500 line-through'
+                        : 'text-slate-200'
+                    }`}
+                  >
+                    {item.title}
+                  </h5>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    {item.description}
+                  </p>
                 </div>
               </div>
-
-              {/* Text */}
-              <div className="flex-1 min-w-0">
-                <h5
-                  className={`text-[13px] font-medium ${
-                    item.completed
-                      ? 'text-slate-500 line-through'
-                      : 'text-slate-200'
-                  }`}
-                >
-                  {item.title}
-                </h5>
-                <p className="text-[10px] text-slate-500 mt-1">
-                  {item.description}
-                </p>
-              </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-sm text-slate-500 italic">No recommended actions yet</p>
+        )}
       </div>
     </div>
   )

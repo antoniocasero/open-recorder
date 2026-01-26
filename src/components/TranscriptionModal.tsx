@@ -21,6 +21,11 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
   const [saving, setSaving] = useState(false)
   const [summary, setSummary] = useState('')
   const [loadingSummary, setLoadingSummary] = useState(false)
+  const wordCount = transcript.words.length > 0
+    ? transcript.words.length
+    : transcript.text.split(/\s+/).filter(Boolean).length
+  const durationLabel = transcript.duration > 0 ? `${transcript.duration.toFixed(1)}s` : '--'
+  const hasWordTimestamps = transcript.words.length > 0
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(transcript.text)
@@ -28,42 +33,39 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleDownload = () => {
-    const blob = new Blob([transcript.text], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `transcript_${new Date().toISOString().slice(0, 10)}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+  const handleDownload = async () => {
+    try {
+      await downloadFile(transcript.text, `transcript_${new Date().toISOString().slice(0, 10)}.txt`)
+    } catch (error) {
+      console.error('Failed to download transcript:', error)
+      toast.error(`Failed to download: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
-  const handleExportSRT = () => {
+  const handleExportSRT = async () => {
     try {
       const content = toSRT(transcript)
-      downloadFile(content, `transcript_${Date.now()}.srt`)
+      await downloadFile(content, `transcript_${Date.now()}.srt`)
     } catch (error) {
       console.error('Failed to export SRT:', error)
       toast.error(`Failed to export SRT: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
-  const handleExportVTT = () => {
+  const handleExportVTT = async () => {
     try {
       const content = toVTT(transcript)
-      downloadFile(content, `transcript_${Date.now()}.vtt`)
+      await downloadFile(content, `transcript_${Date.now()}.vtt`)
     } catch (error) {
       console.error('Failed to export VTT:', error)
       toast.error(`Failed to export VTT: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
-  const handleExportJSON = () => {
+  const handleExportJSON = async () => {
     try {
       const content = toJSON(transcript)
-      downloadFile(content, `transcript_${Date.now()}.json`)
+      await downloadFile(content, `transcript_${Date.now()}.json`)
     } catch (error) {
       console.error('Failed to export JSON:', error)
       toast.error(`Failed to export JSON: ${error instanceof Error ? error.message : String(error)}`)
@@ -133,7 +135,7 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
            <div>
              <h3 className="text-lg font-semibold">Transcript{editMode ? ' (Editing)' : ''}</h3>
              <p className="text-sm text-gray-400">
-               {transcript.language} · {transcript.words.length} words · {transcript.duration.toFixed(1)}s
+               {transcript.language} · {wordCount} words · {durationLabel}
              </p>
            </div>
           <button
@@ -145,36 +147,38 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
         </div>
 
          {/* Body */}
-         <div className="flex-1 overflow-y-auto p-4">
-           {editMode ? (
-             <textarea
-               className="w-full h-48 p-2 bg-[#2a2a2a] border border-[#444] rounded text-sm text-gray-300 whitespace-pre-wrap font-mono"
-               value={editedText}
-               onChange={(e) => setEditedText(e.target.value)}
-               autoFocus
-             />
-           ) : (
-             <>
-               {/* Word‑by‑word display with timestamps */}
-               <div className="space-y-2">
-                 {transcript.words.map((word, idx) => (
-                   <div
-                     key={idx}
-                     className="inline-flex items-center bg-[#2a2a2a] rounded px-2 py-1 mr-2 mb-2 border border-[#333]"
-                     title={`${word.start.toFixed(2)}s – ${word.end.toFixed(2)}s`}
-                   >
-                     <span className="text-sm">{word.word}</span>
-                     <span className="text-xs text-gray-500 ml-1">
-                       {word.start.toFixed(1)}s
-                     </span>
-                   </div>
-                 ))}
-               </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            {editMode ? (
+              <textarea
+                className="w-full min-h-[320px] p-3 bg-[#2a2a2a] border border-[#444] rounded text-sm text-gray-300 whitespace-pre-wrap font-mono"
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                autoFocus
+              />
+            ) : (
+              <>
+                {/* Word‑by‑word display with timestamps */}
+                {hasWordTimestamps && (
+                  <div className="space-y-2">
+                    {transcript.words.map((word, idx) => (
+                      <div
+                        key={idx}
+                        className="inline-flex items-center bg-[#2a2a2a] rounded px-2 py-1 mr-2 mb-2 border border-[#333]"
+                        title={`${word.start.toFixed(2)}s – ${word.end.toFixed(2)}s`}
+                      >
+                        <span className="text-sm">{word.word}</span>
+                        <span className="text-xs text-gray-500 ml-1">
+                          {word.start.toFixed(1)}s
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-               {/* Plain text block */}
-               <div className="mt-6 pt-4 border-t border-[#333]">
-                 <p className="text-sm text-gray-300 whitespace-pre-wrap">{transcript.text}</p>
-                </div>
+                {/* Plain text block */}
+                <div className={hasWordTimestamps ? 'mt-6 pt-4 border-t border-[#333]' : ''}>
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{transcript.text}</p>
+                 </div>
 
                 {summary && (
                   <div className="mt-6 pt-4 border-t border-[#333]">
@@ -208,11 +212,11 @@ export function TranscriptionModal({ transcript, audioPath, onSaveTranscript, on
          </div>
 
          {/* Footer */}
-         <div className="p-4 border-t border-[#333] flex items-center justify-between">
-           <div className="text-xs text-gray-500">
-             Click a word to seek in audio (future feature)
-           </div>
-           <div className="flex items-center gap-2">
+          <div className="p-4 border-t border-[#333] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-gray-500">
+              {hasWordTimestamps ? 'Click a word to seek in audio (future feature)' : 'Edit or export this transcript'}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 justify-end">
              {editMode ? (
                <>
                  <button

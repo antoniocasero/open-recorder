@@ -39,8 +39,7 @@ export function transcriptToSegments(transcript: Transcript): TranscriptSegment[
       const start = segmentWords[0].start
       const end = segmentWords[segmentWords.length - 1].end
       const segmentText = segmentWords.map(w => w.word).join(' ')
-      // Alternate speakers: even segments = Interviewer, odd = Speaker 1
-      const speaker = i % 2 === 0 ? 'Interviewer' : 'Speaker 1'
+      const speaker = 'Speaker'
       segments.push({ speaker, text: segmentText, start, end })
       startIdx = endIdx + 1
     }
@@ -51,7 +50,7 @@ export function transcriptToSegments(transcript: Transcript): TranscriptSegment[
     sentences.forEach((sentence, idx) => {
       const start = idx * sentenceDuration
       const end = (idx + 1) * sentenceDuration
-      const speaker = idx % 2 === 0 ? 'Interviewer' : 'Speaker 1'
+      const speaker = 'Speaker'
       segments.push({ speaker, text: sentence.trim(), start, end })
     })
   }
