@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { AudioItem } from '@/lib/types';
 import { StatusBadge } from './StatusBadge';
 import { WaveformPlaceholder } from './WaveformPlaceholder';
-import { readTranscript } from '@/lib/transcription/commands';
+import { readTranscript, transcribeAudio } from '@/lib/transcription/commands';
+import { Transcript } from '@/lib/transcription/types';
+import { TranscriptionModal } from './TranscriptionModal';
 
 interface RecordingsTableProps {
   recordings: AudioItem[];
@@ -32,6 +34,11 @@ export function RecordingsTable({ recordings, onSelect }: RecordingsTableProps) 
   const router = useRouter();
   const [transcriptStatus, setTranscriptStatus] = useState<Record<string, boolean>>({});
   const transcriptCache = useRef<Map<string, boolean>>(new Map());
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [activeTranscript, setActiveTranscript] = useState<Transcript | null>(null);
+  const [activeRecordingId, setActiveRecordingId] = useState<string | null>(null);
+  const [activeAudioPath, setActiveAudioPath] = useState<string | null>(null);
+  const [showTranscriptModal, setShowTranscriptModal] = useState(false);
 
   useEffect(() => {
     // Check transcript existence for each recording
@@ -65,6 +72,62 @@ export function RecordingsTable({ recordings, onSelect }: RecordingsTableProps) 
     }
   };
 
+  const handleActionClick = async (event: MouseEvent<HTMLButtonElement>, recording: AudioItem) => {
+    event.stopPropagation();
+    if (actionLoading[recording.id]) return;
+
+    setActionLoading((prev) => ({
+      ...prev,
+      [recording.id]: true,
+    }));
+    setActiveRecordingId(recording.id);
+    setActiveAudioPath(recording.path);
+
+    try {
+      const existingTranscript = await readTranscript(recording.path);
+      if (existingTranscript) {
+        const transcript: Transcript = {
+          text: existingTranscript,
+          words: [],
+          duration: recording.duration ?? 0,
+          language: 'Unknown',
+        };
+        setActiveTranscript(transcript);
+        setShowTranscriptModal(true);
+        setTranscriptStatus((prev) => ({
+          ...prev,
+          [recording.id]: true,
+        }));
+        return;
+      }
+
+      const transcript = await transcribeAudio(recording.path);
+      setActiveTranscript(transcript);
+      setShowTranscriptModal(true);
+      setTranscriptStatus((prev) => ({
+        ...prev,
+        [recording.id]: true,
+      }));
+    } catch (error) {
+      console.error('Failed to open transcript:', error);
+    } finally {
+      setActionLoading((prev) => ({
+        ...prev,
+        [recording.id]: false,
+      }));
+    }
+  };
+
+  const handleTranscriptSaved = (transcript: Transcript) => {
+    setActiveTranscript(transcript);
+    if (activeRecordingId) {
+      setTranscriptStatus((prev) => ({
+        ...prev,
+        [activeRecordingId]: true,
+      }));
+    }
+  };
+
   if (recordings.length === 0) {
     return (
       <div className="bg-slate-900/50 rounded-lg border border-slate-border p-8 flex items-center justify-center">
@@ -83,72 +146,91 @@ export function RecordingsTable({ recordings, onSelect }: RecordingsTableProps) 
   ];
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-border">
-      <table className="w-full border-separate border-spacing-0">
-        <thead>
-          <tr>
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className="border-b border-slate-border bg-slate-deep p-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest"
-              >
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {recordings.map((recording) => {
-            const hasTranscript = transcriptStatus[recording.id] || false;
-            const status = hasTranscript ? 'transcribed' : 'audio_only';
+    <>
+      <div className="overflow-hidden rounded-lg border border-slate-border">
+        <table className="w-full border-separate border-spacing-0">
+          <thead>
+            <tr>
+              {columns.map((col) => (
+                <th
+                  key={col.key}
+                  className="border-b border-slate-border bg-slate-deep p-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+                >
+                  {col.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {recordings.map((recording) => {
+              const hasTranscript = transcriptStatus[recording.id] || false;
+              const status = hasTranscript ? 'transcribed' : 'audio_only';
+              const isLoading = actionLoading[recording.id] || false;
 
-            return (
-              <tr
-                key={recording.id}
-                onClick={() => handleRowClick(recording.id)}
-                className="table-row-hover border-b border-slate-border/30"
-              >
-                {/* Waveform column */}
-                <td className="p-3">
-                  <WaveformPlaceholder transcribed={hasTranscript} />
-                </td>
-                {/* Title column */}
-                <td className="p-3">
-                  <p className="text-sm font-medium text-slate-200 truncate max-w-xs">
-                    {recording.name}
-                  </p>
-                </td>
-                {/* Date column */}
-                <td className="p-3 text-sm text-slate-400">
-                  {formatDate(recording.mtime)}
-                </td>
-                {/* Duration column */}
-                <td className="p-3 text-sm text-slate-400">
-                  {formatDuration(recording.duration)}
-                </td>
-                {/* Status column */}
-                <td className="p-3">
-                  <StatusBadge status={status} />
-                </td>
-                {/* Actions column */}
-                <td className="p-3">
-                  <button
-                    className="p-1 hover:bg-slate-surface rounded transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('Actions clicked for', recording.id);
-                    }}
-                  >
-                    <span className="material-symbols-outlined text-slate-400">
-                      more_horiz
-                    </span>
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+              return (
+                <tr
+                  key={recording.id}
+                  onClick={() => handleRowClick(recording.id)}
+                  className="table-row-hover border-b border-slate-border/30"
+                >
+                  {/* Waveform column */}
+                  <td className="p-3">
+                    <WaveformPlaceholder transcribed={hasTranscript} />
+                  </td>
+                  {/* Title column */}
+                  <td className="p-3">
+                    <p className="text-sm font-medium text-slate-200 truncate max-w-xs">
+                      {recording.name}
+                    </p>
+                  </td>
+                  {/* Date column */}
+                  <td className="p-3 text-sm text-slate-400">
+                    {formatDate(recording.mtime)}
+                  </td>
+                  {/* Duration column */}
+                  <td className="p-3 text-sm text-slate-400">
+                    {formatDuration(recording.duration)}
+                  </td>
+                  {/* Status column */}
+                  <td className="p-3">
+                    <StatusBadge status={status} />
+                  </td>
+                  {/* Actions column */}
+                  <td className="p-3">
+                    <button
+                      className="p-1 hover:bg-slate-surface rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={(event) => handleActionClick(event, recording)}
+                      disabled={isLoading}
+                      aria-label={isLoading ? 'Loading transcript' : 'Open transcript'}
+                    >
+                      <span
+                        className={`material-symbols-outlined text-slate-400 ${
+                          isLoading ? 'animate-spin' : ''
+                        }`}
+                      >
+                        {isLoading ? 'progress_activity' : 'more_horiz'}
+                      </span>
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {showTranscriptModal && activeTranscript && activeAudioPath && (
+        <TranscriptionModal
+          transcript={activeTranscript}
+          audioPath={activeAudioPath}
+          onSaveTranscript={handleTranscriptSaved}
+          onClose={() => {
+            setShowTranscriptModal(false);
+            setActiveTranscript(null);
+            setActiveRecordingId(null);
+            setActiveAudioPath(null);
+          }}
+        />
+      )}
+    </>
   );
 }
