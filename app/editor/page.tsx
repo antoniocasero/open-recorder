@@ -5,14 +5,16 @@ import { useSearchParams } from 'next/navigation'
 import { PlayerSidebar } from '@/components/PlayerSidebar'
 import { InsightsSidebar } from '@/components/InsightsSidebar'
 import { Footer } from '@/components/Footer'
+import { TranscriptionModal } from '@/components/TranscriptionModal'
 import { Action } from '@/components/RecommendedActions'
 import { SearchBar } from '@/components/SearchBar'
 import { TranscriptView } from '@/components/TranscriptView'
 import { scanFolderForAudio } from '@/lib/fs/commands'
 import { getLastFolder } from '@/lib/fs/config'
-import { readTranscript, summarizeTranscript } from '@/lib/transcription/commands'
+import { readTranscript, summarizeTranscript, saveTranscript } from '@/lib/transcription/commands'
 import { extractKeyTopics } from '@/lib/transcription/insights'
 import { transcriptToSegments } from '@/lib/transcription/segment'
+import { downloadFile } from '@/lib/transcription/export'
 import { AudioItem } from '@/lib/types'
 import { TranscriptSegment } from '@/lib/transcription/types'
 
@@ -36,6 +38,10 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [transcriptSegments, setTranscriptSegments] = useState<TranscriptSegment[] | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
+  const [showExportDropdown, setShowExportDropdown] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const [editedTranscript, setEditedTranscript] = useState<string>('')
   const playerSidebarRef = useRef<{ seek: (time: number) => void }>(null)
 
 
@@ -156,8 +162,114 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
     playerSidebarRef.current?.seek(time)
   }, [])
 
+  // Export functions
+  const handleExportTXT = () => {
+    if (!transcript) return
+    const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.txt`
+    downloadFile(transcript, filename)
+    setShowExportDropdown(false)
+  }
+
+  const handleExportSRT = () => {
+    if (!transcriptSegments || transcriptSegments.length === 0) return
+    // Generate SRT from segments
+    let srtContent = ''
+    transcriptSegments.forEach((segment, index) => {
+      const formatTime = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600)
+        const minutes = Math.floor((seconds % 3600) / 60)
+        const secs = seconds % 60
+        const millis = Math.round((secs - Math.floor(secs)) * 1000)
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${Math.floor(secs).toString().padStart(2, '0')},${millis.toString().padStart(3, '0')}`
+      }
+      srtContent += `${index + 1}\n`
+      srtContent += `${formatTime(segment.start)} --> ${formatTime(segment.end)}\n`
+      srtContent += `${segment.text}\n\n`
+    })
+    const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.srt`
+    downloadFile(srtContent, filename)
+    setShowExportDropdown(false)
+  }
+
+  const handleExportVTT = () => {
+    if (!transcriptSegments || transcriptSegments.length === 0) return
+    // Generate VTT from segments
+    let vttContent = 'WEBVTT\n\n'
+    transcriptSegments.forEach((segment, index) => {
+      const formatTime = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600)
+        const minutes = Math.floor((seconds % 3600) / 60)
+        const secs = seconds % 60
+        const millis = Math.round((secs - Math.floor(secs)) * 1000)
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${Math.floor(secs).toString().padStart(2, '0')}.${millis.toString().padStart(3, '0')}`
+      }
+      vttContent += `${index + 1}\n`
+      vttContent += `${formatTime(segment.start)} --> ${formatTime(segment.end)}\n`
+      vttContent += `${segment.text}\n\n`
+    })
+    const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.vtt`
+    downloadFile(vttContent, filename)
+    setShowExportDropdown(false)
+  }
+
+  const handleExportJSON = () => {
+    if (!transcript) return
+    const jsonContent = JSON.stringify({
+      transcript,
+      segments: transcriptSegments,
+      metadata: {
+        recording: selectedRecording?.name,
+        exportedAt: new Date().toISOString(),
+        wordCount
+      }
+    }, null, 2)
+    const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.json`
+    downloadFile(jsonContent, filename)
+    setShowExportDropdown(false)
+  }
+
+  // Edit functions
+  const handleEdit = () => {
+    setEditMode(true)
+    setEditedTranscript(transcript || '')
+  }
+
+  const handleSaveEdit = async () => {
+    if (!selectedRecording || !editedTranscript.trim()) return
+    try {
+      // Save to file
+      await saveTranscript(selectedRecording.path, editedTranscript)
+      // Update local state
+      setTranscript(editedTranscript)
+      // Update segments (recreate from edited text)
+      if (selectedRecording.duration) {
+        const mockTranscript = {
+          text: editedTranscript,
+          words: [],
+          duration: selectedRecording.duration || 120,
+          language: 'en'
+        }
+        const segments = transcriptToSegments(mockTranscript)
+        setTranscriptSegments(segments)
+        // Extract key topics from edited text
+        const extracted = extractKeyTopics(editedTranscript)
+        setTopics(extracted)
+      }
+      setEditMode(false)
+      // Show success toast (optional)
+    } catch (error) {
+      console.error('Failed to save transcript:', error)
+      // Show error toast (optional)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditMode(false)
+    setEditedTranscript('')
+  }
+
   return (
-    <>
+    <div className="flex flex-col h-full">
       <div className="flex flex-1 overflow-hidden">
         {isMissingRecording ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8">
@@ -198,16 +310,79 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
                     placeholder="Search transcript…"
                   />
                 </div>
-                <div className="flex items-center gap-3">
-                  <button className="px-4 py-2 border border-slate-border text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-surface transition-colors">
-                    <span className="material-symbols-outlined align-middle mr-2">edit</span>
-                    Edit
-                  </button>
-                  <button className="px-4 py-2 bg-indigo-primary text-slate-100 text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors">
-                    <span className="material-symbols-outlined align-middle mr-2">download</span>
-                    Export
-                  </button>
-                </div>
+                 <div className="flex items-center gap-3 relative">
+                   {editMode ? (
+                     <>
+                       <button
+                         onClick={handleCancelEdit}
+                         className="px-4 py-2 border border-slate-border text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-surface transition-colors"
+                       >
+                         <span className="material-symbols-outlined align-middle mr-2">close</span>
+                         Cancel
+                       </button>
+                       <button
+                         onClick={handleSaveEdit}
+                         className="px-4 py-2 bg-indigo-primary text-slate-100 text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
+                       >
+                         <span className="material-symbols-outlined align-middle mr-2">save</span>
+                         Save
+                        </button>
+                      </>
+                    ) : (
+                     <button
+                       onClick={handleEdit}
+                       className="px-4 py-2 border border-slate-border text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-surface transition-colors"
+                     >
+                       <span className="material-symbols-outlined align-middle mr-2">edit</span>
+                       Edit
+                           </button>
+                        </div>
+                       )}
+                   {/* Export dropdown */}
+                   <div className="relative">
+                     <button
+                       onClick={() => setShowExportDropdown(!showExportDropdown)}
+                       className="px-4 py-2 bg-indigo-primary text-slate-100 text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors flex items-center"
+                     >
+                       <span className="material-symbols-outlined align-middle mr-2">download</span>
+                       Export
+                       <span className="material-symbols-outlined align-middle ml-1 text-sm">
+                         {showExportDropdown ? 'expand_less' : 'expand_more'}
+                       </span>
+                     </button>
+                     {showExportDropdown && (
+                       <div className="absolute right-0 top-full mt-1 w-48 bg-slate-900 border border-slate-border rounded-lg shadow-lg z-10">
+                         <button
+                           onClick={handleExportTXT}
+                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
+                         >
+                           <span className="material-symbols-outlined text-base">description</span>
+                           Export as TXT
+                         </button>
+                         <button
+                           onClick={handleExportSRT}
+                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
+                         >
+                           <span className="material-symbols-outlined text-base">subtitles</span>
+                           Export as SRT
+                         </button>
+                         <button
+                           onClick={handleExportVTT}
+                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
+                         >
+                           <span className="material-symbols-outlined text-base">closed_caption</span>
+                           Export as VTT
+                         </button>
+                         <button
+                           onClick={handleExportJSON}
+                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
+                         >
+                           <span className="material-symbols-outlined text-base">data_object</span>
+                           Export as JSON
+                          </button>
+                      )}
+                   </div>
+                 </div>
               </div>
 
               {/* Transcript view */}
@@ -219,14 +394,26 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
                     <div className="h-4 bg-slate-800 rounded animate-pulse w-4/6"></div>
                     <div className="h-4 bg-slate-800 rounded animate-pulse w-2/3"></div>
                   </div>
-                ) : (
-                  <TranscriptView
-                    transcript={filteredSegments}
-                    currentTime={currentTime}
-                    onSeek={handleSeek}
-                    searchQuery={searchQuery}
-                  />
-                )}
+                 ) : editMode ? (
+                   <div className="max-w-3xl mx-auto">
+                     <textarea
+                       className="w-full h-[calc(100vh-300px)] bg-slate-900 border border-slate-border rounded-lg p-4 text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-1 focus:ring-indigo-primary"
+                       value={editedTranscript}
+                       onChange={(e) => setEditedTranscript(e.target.value)}
+                       autoFocus
+                     />
+                     <div className="mt-4 text-xs text-slate-500">
+                       Edit the transcript text. Press Save to save changes.
+                     </div>
+                   </div>
+                 ) : (
+                   <TranscriptView
+                     transcript={filteredSegments}
+                     currentTime={currentTime}
+                     onSeek={handleSeek}
+                     searchQuery={searchQuery}
+                   />
+                 )}
               </div>
             </main>
 
