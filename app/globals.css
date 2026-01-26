@@ -10,4 +10,15 @@
   .waveform-bar {
     @apply bg-indigo-primary/30 rounded-full transition-all duration-300;
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 10px;
+  }
 }

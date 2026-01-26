@@ -3,15 +3,28 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { PlayerSidebar } from '@/components/PlayerSidebar'
+import { InsightsSidebar } from '@/components/InsightsSidebar'
 import { Footer } from '@/components/Footer'
+import { Action } from '@/components/RecommendedActions'
 import { scanFolderForAudio } from '@/lib/fs/commands'
 import { getLastFolder } from '@/lib/fs/config'
+import { readTranscript, summarizeTranscript } from '@/lib/transcription/commands'
+import { extractKeyTopics } from '@/lib/transcription/insights'
 import { AudioItem } from '@/lib/types'
 
 export default function EditorPage() {
   const [recordings, setRecordings] = useState<AudioItem[]>([])
   const [selectedRecording, setSelectedRecording] = useState<AudioItem | null>(null)
   const [loading, setLoading] = useState(false)
+  const [transcript, setTranscript] = useState<string | null>(null)
+  const [summary, setSummary] = useState<string | null>(null)
+  const [loadingSummary, setLoadingSummary] = useState(false)
+  const [topics, setTopics] = useState<string[]>([])
+  const [actions] = useState<Action[]>([
+    { id: '1', title: "Review Sarah's portfolio links", description: 'Check UX design examples and case studies', completed: false },
+    { id: '2', title: 'Share UX principles summary', description: 'Send key takeaways to design team', completed: false },
+    { id: '3', title: 'Schedule follow‑up interview', description: 'Coordinate with HR and candidate', completed: true },
+  ])
   const searchParams = useSearchParams()
   const recordingId = searchParams.get('recording')
 
@@ -29,6 +42,41 @@ export default function EditorPage() {
       setSelectedRecording(null)
     }
   }, [recordings, recordingId])
+
+  // Load transcript and insights when a recording is selected
+  useEffect(() => {
+    async function loadInsights() {
+      if (!selectedRecording) {
+        setTranscript(null)
+        setSummary(null)
+        setTopics([])
+        return
+      }
+      // Load transcript text from sidecar .txt file
+      const text = await readTranscript(selectedRecording.path)
+      setTranscript(text)
+      if (text) {
+        // Extract key topics
+        const extracted = extractKeyTopics(text)
+        setTopics(extracted)
+        // Generate AI summary if text is not empty
+        setLoadingSummary(true)
+        try {
+          const result = await summarizeTranscript(text)
+          setSummary(result)
+        } catch (error) {
+          console.warn('Could not generate AI summary:', error)
+          // Keep summary as null (component will show placeholder)
+        } finally {
+          setLoadingSummary(false)
+        }
+      } else {
+        setTopics([])
+        setSummary(null)
+      }
+    }
+    loadInsights()
+  }, [selectedRecording])
 
   async function loadRecordings() {
     setLoading(true)
@@ -110,15 +158,12 @@ export default function EditorPage() {
         </main>
 
         {/* Right sidebar – Insights */}
-        <aside className="w-[360px] flex flex-col bg-slate-deep overflow-y-auto">
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-slate-200 mb-4">AI Insights</h3>
-            <p className="text-slate-400">
-              AI‑generated insights, summaries, and action items will appear here.
-              This panel will show key topics, sentiment analysis, and suggested tags.
-            </p>
-          </div>
-        </aside>
+        <InsightsSidebar
+          summary={summary}
+          loadingSummary={loadingSummary}
+          topics={topics}
+          actions={actions}
+        />
       </div>
 
       {/* Editor‑specific footer */}
