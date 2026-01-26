@@ -16,7 +16,9 @@ import { transcriptToSegments } from '@/lib/transcription/segment'
 import { AudioItem } from '@/lib/types'
 import { TranscriptSegment } from '@/lib/transcription/types'
 
-export default function EditorPage() {
+export const dynamic = 'force-dynamic'
+
+function EditorContent({ recordingId }: { recordingId: string | null }) {
   const [recordings, setRecordings] = useState<AudioItem[]>([])
   const [selectedRecording, setSelectedRecording] = useState<AudioItem | null>(null)
   const [loading, setLoading] = useState(false)
@@ -33,8 +35,7 @@ export default function EditorPage() {
   const [transcriptSegments, setTranscriptSegments] = useState<TranscriptSegment[] | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const playerSidebarRef = useRef<{ seek: (time: number) => void }>(null)
-  const searchParams = useSearchParams()
-  const recordingId = searchParams.get('recording')
+
 
   // Load recordings from last folder
   useEffect(() => {
@@ -216,4 +217,18 @@ export default function EditorPage() {
       </Footer>
     </>
   )
+}
+
+export default function EditorPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <EditorPageClient />
+    </Suspense>
+  )
+}
+
+function EditorPageClient() {
+  const searchParams = useSearchParams()
+  const recordingId = searchParams.get('recording')
+  return <EditorContent recordingId={recordingId} />
 }
