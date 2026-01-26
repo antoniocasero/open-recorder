@@ -72,7 +72,7 @@ export const PlayerSidebar = forwardRef<PlayerSidebarHandle, PlayerSidebarProps>
             {bars.map((bar, i) => (
               <div
                 key={i}
-                className={`waveform-bar ${bar.active ? 'bg-indigo-primary' : ''}`}
+                className={`waveform-bar ${bar.active ? 'active' : ''}`}
                 style={{
                   width: '4px',
                   height: `${bar.height}%`,

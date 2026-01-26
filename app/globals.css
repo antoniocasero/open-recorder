@@ -10,6 +10,9 @@
   .waveform-bar {
     @apply bg-indigo-primary/30 rounded-full transition-all duration-300;
   }
+  .waveform-bar.active {
+    @apply bg-indigo-primary;
+  }
 
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
