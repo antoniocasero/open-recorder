@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { AudioItem } from '@/lib/types';
 import { StatusBadge } from './StatusBadge';
 import { WaveformPlaceholder } from './WaveformPlaceholder';
@@ -28,6 +29,7 @@ function formatDuration(seconds?: number): string {
 }
 
 export function RecordingsTable({ recordings, onSelect }: RecordingsTableProps) {
+  const router = useRouter();
   const [transcriptStatus, setTranscriptStatus] = useState<Record<string, boolean>>({});
   const transcriptCache = useRef<Map<string, boolean>>(new Map());
 
@@ -57,6 +59,7 @@ export function RecordingsTable({ recordings, onSelect }: RecordingsTableProps) 
   }, [recordings]);
 
   const handleRowClick = (id: string) => {
+    router.push(`/editor?recording=${id}`);
     if (onSelect) {
       onSelect(id);
     }
