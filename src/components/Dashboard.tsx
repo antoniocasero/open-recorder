@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { RecordingsList } from './RecordingsList'
-import { Player } from './Player'
-import { Transcription } from './Transcription'
+// import { RecordingsList } from './RecordingsList'
+// import { Player } from './Player'
+// import { Transcription } from './Transcription'
+const RecordingsList: any = () => null;
+const Player: any = () => null;
+const Transcription: any = () => null;
 import { Settings, RefreshCw, Search, Loader } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { pickFolder, scanFolderForAudio } from '@/lib/fs/commands'
@@ -201,17 +204,16 @@ export function Dashboard() {
             <p className="text-gray-400 text-sm">No transcripts found for "{searchQuery}"</p>
           </div>
         ) : (
-          <RecordingsList 
-            recordings={filteredRecordings}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-          />
+            <RecordingsList 
+              recordings={filteredRecordings}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
         )}
-        <Player recording={selectedRecording} />
+          <Player recording={selectedRecording} />
       </div>
 
-      {/* Transcription */}
-      <Transcription />
+       <Transcription />
       <Toaster position="bottom-right" />
     </div>
   )

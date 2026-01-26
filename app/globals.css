@@ -4,7 +4,7 @@
 
 @layer components {
   .table-row-hover {
-    @apply hover:bg-slate-800/30 transition-colors cursor-pointer;
+    @apply hover:bg-slate-800/40 transition-colors cursor-pointer;
   }
 
   .waveform-bar {
