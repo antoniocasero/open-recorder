@@ -19,7 +19,7 @@ affects:
 tech-stack:
   added: []
   patterns:
-    - Footer separated from scroll area to stay pinned to view
+    - Footer uses shared component directly for consistent single-line height
     - Row action state drives transcription modal presentation
 
 key-files:
@@ -34,7 +34,7 @@ key-decisions:
 
 patterns-established:
   - "Row-level action buttons open TranscriptionModal with recording-scoped state"
-  - "Footer sits outside scroll area to stay visible and bottom-aligned"
+  - "Footer uses shared Footer component directly for consistent height"
 
 # Metrics
 duration: 1 min
@@ -48,9 +48,9 @@ completed: 2026-01-27
 ## Performance
 
 - **Duration:** 1 min
-- **Started:** 2026-01-27T11:28:47Z
-- **Completed:** 2026-01-27T11:29:17Z
-- **Tasks:** 6
+- **Started:** 2026-01-27T11:38:01Z
+- **Completed:** 2026-01-27T11:39:26Z
+- **Tasks:** 7
 - **Files modified:** 3
 
 ## Accomplishments
@@ -58,6 +58,7 @@ completed: 2026-01-27
 - Kept the library summary footer visible while recordings scroll.
 - Anchored the footer to the view bottom for short lists by separating the scroll area.
 - Mirrored the editor page layout so the library footer stays pinned to the frame edge.
+- Matched editor footer height by using the shared Footer component without extra wrappers.
 
 ## Task Commits
 
@@ -69,6 +70,7 @@ Each task was committed atomically:
 4. **Task 3: Address library footer pinning after feedback** - `1ad566a` (fix)
 5. **Task 3b: Keep footer pinned to the library view** - `2e6a35c` (fix)
 6. **Task 3c: Mirror editor layout for the library footer** - `d00abc2` (fix)
+7. **Task 3d: Match library footer height with editor** - `c88ad5e` (fix)
 
 **Plan metadata:** pending (docs commit)
 
@@ -108,9 +110,17 @@ None - followed plan as specified.
 - **Verification:** Manual layout review
 - **Committed in:** d00abc2
 
+**4. [Rule 1 - Bug] Library footer height mismatched the editor footer**
+- **Found during:** Task 3 (checkpoint verification feedback)
+- **Issue:** Extra wrapper padding made the library footer taller and double-lined.
+- **Fix:** Rendered the shared Footer component directly without the wrapper to match editor height.
+- **Files modified:** app/library/page.tsx
+- **Verification:** Manual layout review
+- **Committed in:** c88ad5e
+
 ---
 
-**Total deviations:** 3 auto-fixed (3 bugs)
+**Total deviations:** 4 auto-fixed (4 bugs)
 **Impact on plan:** Fixes required to meet the sticky footer requirement; no scope change.
 
 ## Issues Encountered
