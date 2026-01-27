@@ -10,7 +10,8 @@ import { Action } from '@/components/RecommendedActions'
 import { SearchBar } from '@/components/SearchBar'
 import { TranscriptView } from '@/components/TranscriptView'
 import { scanFolderForAudio } from '@/lib/fs/commands'
-import { getLastFolder } from '@/lib/fs/config'
+import { getLastFolder, getEditorState, setEditorState } from '@/lib/fs/config'
+import { DEFAULT_EDITOR_STATE, EditorUiState } from '@/lib/editor/state'
 import { readTranscript, summarizeTranscript, recommendActions, extractKeyTopicsAI, getTranscriptInsights } from '@/lib/transcription/commands'
 import { extractKeyTopics, extractRecommendedActions, normalizeTopics } from '@/lib/transcription/insights'
 import { transcriptToSegments } from '@/lib/transcription/segment'
@@ -32,13 +33,40 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
   const [topics, setTopics] = useState<string[]>([])
   const [actions, setActions] = useState<Action[]>([])
 
-  const [searchQuery, setSearchQuery] = useState('')
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(DEFAULT_EDITOR_STATE.leftSidebarCollapsed)
+  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(DEFAULT_EDITOR_STATE.rightSidebarCollapsed)
+  const [searchQuery, setSearchQuery] = useState(DEFAULT_EDITOR_STATE.searchQuery)
+  const [exportFormat, setExportFormat] = useState<EditorUiState['exportFormat']>(DEFAULT_EDITOR_STATE.exportFormat)
   const [transcriptSegments, setTranscriptSegments] = useState<TranscriptSegment[] | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const [showExportDropdown, setShowExportDropdown] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const playerSidebarRef = useRef<{ seek: (time: number) => void }>(null)
+  const hydrationCompleteRef = useRef(false)
 
+  // Hydrate editor UI state from persistent storage
+  useEffect(() => {
+    async function hydrate() {
+      const saved = await getEditorState()
+      setLeftSidebarCollapsed(saved.leftSidebarCollapsed)
+      setRightSidebarCollapsed(saved.rightSidebarCollapsed)
+      setSearchQuery(saved.searchQuery)
+      setExportFormat(saved.exportFormat)
+      hydrationCompleteRef.current = true
+    }
+    hydrate()
+  }, [])
+
+  // Persist editor UI state on change
+  useEffect(() => {
+    if (!hydrationCompleteRef.current) return
+    setEditorState({
+      leftSidebarCollapsed,
+      rightSidebarCollapsed,
+      searchQuery,
+      exportFormat,
+    })
+  }, [leftSidebarCollapsed, rightSidebarCollapsed, searchQuery, exportFormat])
 
   // Load recordings from last folder
   useEffect(() => {
