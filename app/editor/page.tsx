@@ -275,6 +275,7 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
   const handleExportTXT = async () => {
     if (!transcript) return
     const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.txt`
+    setExportFormat('txt')
     try {
       await downloadFile(transcript, filename)
     } finally {
@@ -299,6 +300,7 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
       srtContent += `${segment.text}\n\n`
     })
     const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.srt`
+    setExportFormat('srt')
     try {
       await downloadFile(srtContent, filename)
     } finally {
@@ -323,6 +325,7 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
       vttContent += `${segment.text}\n\n`
     })
     const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.vtt`
+    setExportFormat('vtt')
     try {
       await downloadFile(vttContent, filename)
     } finally {
@@ -342,6 +345,7 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
       }
     }, null, 2)
     const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.json`
+    setExportFormat('json')
     try {
       await downloadFile(jsonContent, filename)
     } finally {
@@ -376,24 +380,44 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
         ) : (
           <>
             {/* Left sidebar – Player */}
-            <PlayerSidebar
-              ref={playerSidebarRef}
-              recording={selectedRecording}
-              currentTime={currentTime}
-              onTimeUpdate={setCurrentTime}
-            />
+            {!leftSidebarCollapsed && (
+              <PlayerSidebar
+                ref={playerSidebarRef}
+                recording={selectedRecording}
+                currentTime={currentTime}
+                onTimeUpdate={setCurrentTime}
+              />
+            )}
 
             {/* Main column – Transcript */}
             <main className="flex-1 flex flex-col bg-slate-deep overflow-hidden border-r border-slate-border">
                {/* Header area with search and buttons */}
                <div className="h-16 px-6 border-b border-slate-border flex items-center justify-between">
-                 <div className="flex items-center gap-4">
-                   <SearchBar
-                     value={searchQuery}
-                     onChange={setSearchQuery}
-                     placeholder="Search transcript…"
-                   />
-                 </div>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
+                      className="p-2 text-slate-400 hover:text-slate-200 transition-colors"
+                      title={leftSidebarCollapsed ? 'Expand left sidebar' : 'Collapse left sidebar'}
+                    >
+                      <span className="material-symbols-outlined">
+                        {leftSidebarCollapsed ? 'panel_left_open' : 'panel_left_close'}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setRightSidebarCollapsed(!rightSidebarCollapsed)}
+                      className="p-2 text-slate-400 hover:text-slate-200 transition-colors"
+                      title={rightSidebarCollapsed ? 'Expand right sidebar' : 'Collapse right sidebar'}
+                    >
+                      <span className="material-symbols-outlined">
+                        {rightSidebarCollapsed ? 'panel_right_open' : 'panel_right_close'}
+                      </span>
+                    </button>
+                    <SearchBar
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="Search transcript…"
+                    />
+                  </div>
                  <div className="flex items-center gap-3">
                    <button 
                      onClick={() => setShowModal(true)}
@@ -409,42 +433,46 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
                        onClick={() => setShowExportDropdown(!showExportDropdown)}
                        className="px-4 py-2 bg-indigo-primary text-slate-100 text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors flex items-center"
                      >
-                       <span className="material-symbols-outlined align-middle mr-2">download</span>
-                       Export
-                       <span className="material-symbols-outlined align-middle ml-1 text-sm">
+                        <span className="material-symbols-outlined align-middle mr-2">download</span>
+                        Export · {exportFormat.toUpperCase()}
+                        <span className="material-symbols-outlined align-middle ml-1 text-sm">
                          {showExportDropdown ? 'expand_less' : 'expand_more'}
                        </span>
                      </button>
                      {showExportDropdown && (
                        <div className="absolute right-0 top-full mt-1 w-48 bg-slate-900 border border-slate-border rounded-lg shadow-lg z-10">
-                         <button
-                           onClick={handleExportTXT}
-                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
-                         >
-                           <span className="material-symbols-outlined text-base">description</span>
-                           Export as TXT
-                         </button>
-                         <button
-                           onClick={handleExportSRT}
-                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
-                         >
-                           <span className="material-symbols-outlined text-base">subtitles</span>
-                           Export as SRT
-                         </button>
-                         <button
-                           onClick={handleExportVTT}
-                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
-                         >
-                           <span className="material-symbols-outlined text-base">closed_caption</span>
-                           Export as VTT
-                         </button>
-                         <button
-                           onClick={handleExportJSON}
-                           className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
-                         >
-                           <span className="material-symbols-outlined text-base">data_object</span>
-                           Export as JSON
-                         </button>
+                          <button
+                            onClick={handleExportTXT}
+                            className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-base">description</span>
+                            <span className="flex-1">Export as TXT</span>
+                            {exportFormat === 'txt' && <span className="material-symbols-outlined text-base">check</span>}
+                          </button>
+                          <button
+                            onClick={handleExportSRT}
+                            className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-base">subtitles</span>
+                            <span className="flex-1">Export as SRT</span>
+                            {exportFormat === 'srt' && <span className="material-symbols-outlined text-base">check</span>}
+                          </button>
+                          <button
+                            onClick={handleExportVTT}
+                            className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-base">closed_caption</span>
+                            <span className="flex-1">Export as VTT</span>
+                            {exportFormat === 'vtt' && <span className="material-symbols-outlined text-base">check</span>}
+                          </button>
+                          <button
+                            onClick={handleExportJSON}
+                            className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-base">data_object</span>
+                            <span className="flex-1">Export as JSON</span>
+                            {exportFormat === 'json' && <span className="material-symbols-outlined text-base">check</span>}
+                          </button>
                        </div>
                      )}
                    </div>
@@ -472,12 +500,14 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
             </main>
 
             {/* Right sidebar – Insights */}
-            <InsightsSidebar
-              summary={summary}
-              loadingSummary={loadingSummary}
-              topics={topics}
-              actions={actions}
-            />
+            {!rightSidebarCollapsed && (
+              <InsightsSidebar
+                summary={summary}
+                loadingSummary={loadingSummary}
+                topics={topics}
+                actions={actions}
+              />
+            )}
           </>
         )}
       </div>
