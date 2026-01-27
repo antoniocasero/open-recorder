@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core'
+import { invoke, isTauri } from '@tauri-apps/api/core'
 import { save } from '@tauri-apps/plugin-dialog'
 import { Transcript, WordTimestamp } from './types'
 
@@ -110,7 +110,7 @@ function getFileExtension(filename: string): string | null {
 }
 
 function isTauriEnvironment(): boolean {
-  return typeof window !== 'undefined' && '__TAURI__' in window
+  return typeof window !== 'undefined' && isTauri()
 }
 
 export async function downloadFile(content: string, filename: string) {
