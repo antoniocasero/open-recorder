@@ -7,6 +7,7 @@ import { KeyTopics } from './KeyTopics'
 interface InsightsSidebarProps {
   summary: string | null
   actions?: Action[]
+  onActionsChange?: (actions: Action[]) => void
   topics: string[]
   loadingSummary?: boolean
 }
@@ -14,6 +15,7 @@ interface InsightsSidebarProps {
 export function InsightsSidebar({
   summary,
   actions,
+  onActionsChange,
   topics,
   loadingSummary = false,
 }: InsightsSidebarProps) {
@@ -35,7 +37,7 @@ export function InsightsSidebar({
       {/* Content */}
       <div className="p-6 space-y-8">
         <AISummary summary={summary} loading={loadingSummary} />
-        <RecommendedActions actions={actions} />
+        <RecommendedActions actions={actions} onChange={onActionsChange} />
         <KeyTopics topics={topics} />
       </div>
     </aside>

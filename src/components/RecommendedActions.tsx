@@ -11,24 +11,33 @@ export interface Action {
 
 interface RecommendedActionsProps {
   actions?: Action[]
+  onChange?: (actions: Action[]) => void
 }
 
-export function RecommendedActions({ actions }: RecommendedActionsProps) {
+export function RecommendedActions({ actions, onChange }: RecommendedActionsProps) {
+  const isControlled = Boolean(onChange)
   const [items, setItems] = useState<Action[]>(actions ?? [])
 
   useEffect(() => {
-    if (actions) {
+    if (!isControlled && actions) {
       setItems(actions)
     }
-  }, [actions])
+  }, [actions, isControlled])
 
   const toggleCompleted = (id: string) => {
-    setItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      )
+    const source = actions ?? items
+    const next = source.map(item =>
+      item.id === id ? { ...item, completed: !item.completed } : item
     )
+
+    if (isControlled) {
+      onChange?.(next)
+    } else {
+      setItems(next)
+    }
   }
+
+  const displayedItems = isControlled ? (actions ?? []) : items
 
   return (
     <div className="space-y-3">
@@ -46,8 +55,8 @@ export function RecommendedActions({ actions }: RecommendedActionsProps) {
 
       {/* Actions list */}
       <div className="space-y-2">
-        {items.length > 0 ? (
-          items.map(item => (
+        {displayedItems.length > 0 ? (
+          displayedItems.map(item => (
             <div
               key={item.id}
               className="bg-slate-900/40 p-3 rounded-xl border border-slate-border/50 hover:border-indigo-primary/30 transition-colors cursor-pointer group"

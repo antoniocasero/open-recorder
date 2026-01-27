@@ -10,14 +10,15 @@ import { Action } from '@/components/RecommendedActions'
 import { SearchBar } from '@/components/SearchBar'
 import { TranscriptView } from '@/components/TranscriptView'
 import { scanFolderForAudio } from '@/lib/fs/commands'
-import { getLastFolder, getEditorState, setEditorState } from '@/lib/fs/config'
+import { getLastFolder, getEditorActionsCompletion, setEditorActionsCompletion, getEditorState, setEditorState } from '@/lib/fs/config'
 import { DEFAULT_EDITOR_STATE, EditorUiState } from '@/lib/editor/state'
 import { readTranscript, summarizeTranscript, recommendActions, extractKeyTopicsAI, getTranscriptInsights } from '@/lib/transcription/commands'
 import { extractKeyTopics, extractRecommendedActions, normalizeTopics } from '@/lib/transcription/insights'
 import { transcriptToSegments } from '@/lib/transcription/segment'
 import { downloadFile } from '@/lib/transcription/export'
 import { AudioItem } from '@/lib/types'
-import { TranscriptSegment, Transcript } from '@/lib/transcription/types'
+import { TranscriptSegment } from '@/lib/transcription/types'
+import toast from 'react-hot-toast'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,39 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
   const [showModal, setShowModal] = useState(false)
   const playerSidebarRef = useRef<{ seek: (time: number) => void }>(null)
   const hydrationCompleteRef = useRef(false)
+
+  function actionIdFromContent(title: string, description: string): string {
+    // FNV-1a 32-bit hash for stable, deterministic IDs without dependencies
+    const str = `${title}\n${description}`
+    let hash = 2166136261
+    for (let i = 0; i < str.length; i++) {
+      hash ^= str.charCodeAt(i)
+      hash = Math.imul(hash, 16777619)
+    }
+    return `action_${(hash >>> 0).toString(16)}`
+  }
+
+  async function mergeActionsWithSavedCompletion(
+    recordingPath: string,
+    nextActions: Action[],
+  ): Promise<Action[]> {
+    try {
+      const completion = await getEditorActionsCompletion(recordingPath)
+      return nextActions.map((a) => ({ ...a, completed: completion[a.id] ?? a.completed }))
+    } catch {
+      // Persistence is best-effort; render actions even if store fails.
+      return nextActions
+    }
+  }
+
+  async function persistActionCompletion(recordingPath: string, nextActions: Action[]): Promise<void> {
+    const completion = nextActions.reduce<Record<string, boolean>>((acc, a) => {
+      acc[a.id] = Boolean(a.completed)
+      return acc
+    }, {})
+
+    await setEditorActionsCompletion(recordingPath, completion)
+  }
 
   // Hydrate editor UI state from persistent storage
   useEffect(() => {
@@ -132,19 +166,21 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
               if (insights.summary) {
                 setSummary(insights.summary)
               }
-              if (insights.actions) {
-                const derivedActions = insights.actions.length > 0
-                  ? insights.actions
-                  : extractRecommendedActions(text)
-                setActions(
-                  derivedActions.map((action, index) => ({
-                    id: `action-${index + 1}`,
-                    title: action.title,
-                    description: action.description,
-                    completed: false,
-                  }))
-                )
-              }
+               if (insights.actions) {
+                 const derivedActions = insights.actions.length > 0
+                   ? insights.actions
+                   : extractRecommendedActions(text)
+
+                 const normalized: Action[] = derivedActions.map((action) => ({
+                   id: actionIdFromContent(action.title, action.description),
+                   title: action.title,
+                   description: action.description,
+                   completed: false,
+                 }))
+
+                 const merged = await mergeActionsWithSavedCompletion(selectedRecording.path, normalized)
+                 setActions(merged)
+               }
               // If any field missing (shouldn't happen), fall through to separate generation
               if (insights.topics && insights.summary && insights.actions) {
                 // All fields present, we're done
@@ -191,23 +227,31 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
               const startTime = Date.now()
               const aiActions = await recommendActions(text)
               console.log(`Actions generated in ${Date.now() - startTime}ms`)
-              const derivedActions = aiActions.length > 0
-                ? aiActions
-                : extractRecommendedActions(text)
+               const derivedActions = aiActions.length > 0
+                 ? aiActions
+                 : extractRecommendedActions(text)
 
-              setActions(
-                derivedActions.map((action, index) => ({
-                  id: `action-${index + 1}`,
-                  title: action.title,
-                  description: action.description,
-                  completed: false,
-                }))
-              )
-            } catch (error) {
-              console.warn('Could not generate AI actions:', error)
-              const fallback = extractRecommendedActions(summary || text)
-              setActions(fallback)
-            }
+               const normalized: Action[] = derivedActions.map((action) => ({
+                 id: actionIdFromContent(action.title, action.description),
+                 title: action.title,
+                 description: action.description,
+                 completed: false,
+               }))
+
+               const merged = await mergeActionsWithSavedCompletion(selectedRecording.path, normalized)
+               setActions(merged)
+             } catch (error) {
+               console.warn('Could not generate AI actions:', error)
+               const fallback = extractRecommendedActions(summary || text)
+               const normalized: Action[] = fallback.map((action) => ({
+                 id: actionIdFromContent(action.title, action.description),
+                 title: action.title,
+                 description: action.description,
+                 completed: Boolean(action.completed),
+               }))
+               const merged = await mergeActionsWithSavedCompletion(selectedRecording.path, normalized)
+               setActions(merged)
+             }
           } else {
             setTranscriptSegments(null)
             setTopics([])
@@ -273,18 +317,29 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
 
   // Export functions
   const handleExportTXT = async () => {
-    if (!transcript) return
+    if (!transcript) {
+      toast.error('No transcript available to export')
+      setShowExportDropdown(false)
+      return
+    }
     const filename = `transcript_${selectedRecording?.name.replace(/\.[^/.]+$/, '') || 'recording'}.txt`
     setExportFormat('txt')
     try {
       await downloadFile(transcript, filename)
+      toast.success('Exported TXT')
+    } catch (error) {
+      toast.error(`Export failed: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setShowExportDropdown(false)
     }
   }
 
   const handleExportSRT = async () => {
-    if (!transcriptSegments || transcriptSegments.length === 0) return
+    if (!transcriptSegments || transcriptSegments.length === 0) {
+      toast.error('No transcript available to export')
+      setShowExportDropdown(false)
+      return
+    }
     // Generate SRT from segments
     let srtContent = ''
     transcriptSegments.forEach((segment, index) => {
@@ -303,13 +358,20 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
     setExportFormat('srt')
     try {
       await downloadFile(srtContent, filename)
+      toast.success('Exported SRT')
+    } catch (error) {
+      toast.error(`Export failed: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setShowExportDropdown(false)
     }
   }
 
   const handleExportVTT = async () => {
-    if (!transcriptSegments || transcriptSegments.length === 0) return
+    if (!transcriptSegments || transcriptSegments.length === 0) {
+      toast.error('No transcript available to export')
+      setShowExportDropdown(false)
+      return
+    }
     // Generate VTT from segments
     let vttContent = 'WEBVTT\n\n'
     transcriptSegments.forEach((segment, index) => {
@@ -328,13 +390,20 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
     setExportFormat('vtt')
     try {
       await downloadFile(vttContent, filename)
+      toast.success('Exported VTT')
+    } catch (error) {
+      toast.error(`Export failed: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setShowExportDropdown(false)
     }
   }
 
   const handleExportJSON = async () => {
-    if (!transcript) return
+    if (!transcript) {
+      toast.error('No transcript available to export')
+      setShowExportDropdown(false)
+      return
+    }
     const jsonContent = JSON.stringify({
       transcript,
       segments: transcriptSegments,
@@ -348,6 +417,9 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
     setExportFormat('json')
     try {
       await downloadFile(jsonContent, filename)
+      toast.success('Exported JSON')
+    } catch (error) {
+      toast.error(`Export failed: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setShowExportDropdown(false)
     }
@@ -400,7 +472,7 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
                       title={leftSidebarCollapsed ? 'Expand left sidebar' : 'Collapse left sidebar'}
                     >
                       <span className="material-symbols-outlined">
-                        {leftSidebarCollapsed ? 'panel_left_open' : 'panel_left_close'}
+                        {leftSidebarCollapsed ? 'chevron_right' : 'chevron_left'}
                       </span>
                     </button>
                     <button
@@ -409,7 +481,7 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
                       title={rightSidebarCollapsed ? 'Expand right sidebar' : 'Collapse right sidebar'}
                     >
                       <span className="material-symbols-outlined">
-                        {rightSidebarCollapsed ? 'panel_right_open' : 'panel_right_close'}
+                        {rightSidebarCollapsed ? 'chevron_left' : 'chevron_right'}
                       </span>
                     </button>
                     <SearchBar
@@ -506,6 +578,18 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
                 loadingSummary={loadingSummary}
                 topics={topics}
                 actions={actions}
+                onActionsChange={(next) => {
+                  setActions(next)
+                  if (!selectedRecording) return
+
+                  void (async () => {
+                    try {
+                      await persistActionCompletion(selectedRecording.path, next)
+                    } catch (error) {
+                      toast.error(`Failed to save actions: ${error instanceof Error ? error.message : String(error)}`)
+                    }
+                  })()
+                }}
               />
             )}
           </>
@@ -564,14 +648,14 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
                   setSummary(insights.summary)
                 }
                 if (insights.actions) {
-                  setActions(
-                    insights.actions.map((action, index) => ({
-                      id: `action-${index + 1}`,
-                      title: action.title,
-                      description: action.description,
-                      completed: false,
-                    }))
-                  )
+                  const normalized: Action[] = insights.actions.map((action) => ({
+                    id: actionIdFromContent(action.title, action.description),
+                    title: action.title,
+                    description: action.description,
+                    completed: false,
+                  }))
+                  const merged = await mergeActionsWithSavedCompletion(selectedRecording.path, normalized)
+                  setActions(merged)
                 }
                 // If any field missing, fall through to separate generation
                 if (insights.topics && insights.summary && insights.actions) {
@@ -587,23 +671,30 @@ function EditorContent({ recordingId }: { recordingId: string | null }) {
               try {
                 const aiTopics = await extractKeyTopicsAI(updatedTranscript.text)
                 setTopics(normalizeTopics(aiTopics))
-              } catch (error) {
+              } catch {
                 const extracted = extractKeyTopics(updatedTranscript.text)
                 setTopics(normalizeTopics(extracted))
               }
               try {
                 const aiActions = await recommendActions(updatedTranscript.text)
-                setActions(
-                  aiActions.map((action, index) => ({
-                    id: `action-${index + 1}`,
-                    title: action.title,
-                    description: action.description,
-                    completed: false,
-                  }))
-                )
-              } catch (error) {
+                const normalized: Action[] = aiActions.map((action) => ({
+                  id: actionIdFromContent(action.title, action.description),
+                  title: action.title,
+                  description: action.description,
+                  completed: false,
+                }))
+                const merged = await mergeActionsWithSavedCompletion(selectedRecording.path, normalized)
+                setActions(merged)
+              } catch {
                 const fallback = extractRecommendedActions(updatedTranscript.text)
-                setActions(fallback)
+                const normalized: Action[] = fallback.map((action) => ({
+                  id: actionIdFromContent(action.title, action.description),
+                  title: action.title,
+                  description: action.description,
+                  completed: Boolean(action.completed),
+                }))
+                const merged = await mergeActionsWithSavedCompletion(selectedRecording.path, normalized)
+                setActions(merged)
               }
               // Summary will remain null (already cleared) or could be generated via summarizeTranscript
               // but we'll leave it null for now since user edited transcript
