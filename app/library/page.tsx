@@ -64,7 +64,7 @@ export default function LibraryPage() {
   }
 
   return (
-    <main className="flex flex-col flex-1 overflow-hidden">
+    <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Header area */}
       <div className="border-b border-slate-border p-4">
         <div className="flex items-center justify-between">
@@ -87,11 +87,11 @@ export default function LibraryPage() {
       </div>
 
       {/* Table area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
-        <div className="flex-1 p-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto p-4">
           <RecordingsTable recordings={recordings} onSelect={(id) => console.log('Selected:', id)} />
         </div>
-        <div className="sticky bottom-0 z-10 border-t border-slate-border bg-slate-deep px-4 pb-4 pt-3">
+        <div className="border-t border-slate-border bg-slate-deep px-4 pb-4 pt-3">
           <Footer>
             <div className="flex items-center gap-6">
               <span className="text-[10px] font-bold text-slate-500 uppercase">
