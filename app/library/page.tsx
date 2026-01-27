@@ -93,18 +93,16 @@ export default function LibraryPage() {
         </div>
       </div>
 
-      <div className="border-t border-slate-border bg-slate-deep px-4 pb-4 pt-3">
-        <Footer>
-          <div className="flex items-center gap-6">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">
-              Total Recordings: {recordings.length}
-            </span>
-            <span className="text-[10px] font-bold text-slate-500 uppercase">
-              Total Duration: {formatDuration(totalDuration)}
-            </span>
-          </div>
-        </Footer>
-      </div>
+      <Footer>
+        <div className="flex items-center gap-6">
+          <span className="text-[10px] font-bold text-slate-500 uppercase">
+            Total Recordings: {recordings.length}
+          </span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase">
+            Total Duration: {formatDuration(totalDuration)}
+          </span>
+        </div>
+      </Footer>
     </main>
   );
 }
