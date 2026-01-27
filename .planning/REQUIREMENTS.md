@@ -21,7 +21,7 @@ Requirements for milestone v1.1. Each maps to roadmap phases.
 
 ### Editor Storage
 
-- [ ] **EDITOR-01**: User's editor page UI state (expanded panels, selected options) persists across sessions
+- [x] **EDITOR-01**: User's editor page UI state (expanded panels, selected options) persists across sessions
 
 ## v2 Requirements
 
@@ -56,7 +56,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-FIXES-01 | Phase 4 | Pending |
 | UI-FIXES-02 | Phase 4 | Pending |
 | UI-FIXES-03 | Phase 4 | Pending |
-| EDITOR-01 | Phase 5 | Pending |
+| EDITOR-01 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 7 total
@@ -65,4 +65,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-26*
-*Last updated: 2026-01-26 after v1.1 milestone definition*
+*Last updated: 2026-01-27 after Phase 5 completion*

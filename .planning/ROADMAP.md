@@ -59,7 +59,11 @@ Plans:
   1. User can trigger intended action (e.g., play, transcribe) via the library page action button
   2. User can see accurate duration (mm:ss) for each recording in the library list
   3. User can access pagination controls and action buttons via sticky footer while scrolling through recordings
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [x] 04-01-PLAN.md — Populate audio durations during scan
+- [x] 04-02-PLAN.md — Wire action button workflow and sticky footer
 
 #### Phase 5: Editor State Persistence
 **Goal**: User's editor page UI state persists across app sessions
@@ -68,7 +72,11 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User's expanded/collapsed panels in editor page remain as left after reopening app
   2. User's selected options (e.g., export format, search filters) persist across app sessions
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [x] 05-01-PLAN.md — Define editor UI state model and store helpers
+- [x] 05-02-PLAN.md — Persist editor panels, filters, and export selection
 
 #### Phase 6: Insights Page
 **Goal**: User can view transcription statistics and key metrics through a professional insights dashboard
@@ -90,8 +98,8 @@ Phases execute in numeric order: 4 → 5 → 6
 | 1. Transcription MVP | v1.0 | 5/5 | Complete | 2026-01-26 |
 | 2. Transcript Management Enhancements | v1.0 | 6/6 | Complete | 2026-01-26 |
 | 3. Advanced Features & Scalability | v1.0 | 6/6 | Complete | 2026-01-26 |
-| 4. UI Fixes & Enhancements | v1.1 | 0/TBD | Not started | - |
-| 5. Editor State Persistence | v1.1 | 0/TBD | Not started | - |
+| 4. UI Fixes & Enhancements | v1.1 | 2/2 | Complete | 2026-01-27 |
+| 5. Editor State Persistence | v1.1 | 2/2 | Complete | 2026-01-27 |
 | 6. Insights Page | v1.1 | 0/TBD | Not started | - |
 
 ---
