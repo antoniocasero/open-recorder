@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { ToasterClient } from '@/components/ToasterClient'
 import './globals.css';
 
 export default function RootLayout({
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body className="flex flex-col h-screen bg-slate-deep text-slate-muted">
         <Header />
         <main className="flex-1 overflow-auto">{children}</main>
+        <ToasterClient />
         {/* Footer will be provided by each page */}
       </body>
     </html>
