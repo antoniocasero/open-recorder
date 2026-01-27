@@ -64,45 +64,46 @@ export default function LibraryPage() {
   }
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {/* Header area */}
-      <div className="border-b border-slate-border p-4">
-        <div className="flex items-center justify-between">
-          <div>
-             <h1 className="text-sm font-semibold text-slate-400">
-               My Files / All Recordings
-             </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleChooseFolder}
-              disabled={loading}
-              className="px-4 py-2 bg-indigo-primary text-slate-100 text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-lg">sync</span>
-              Sync Device
-            </button>
+    <main className="flex flex-col h-full">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* Header area */}
+        <div className="border-b border-slate-border p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-sm font-semibold text-slate-400">
+                My Files / All Recordings
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleChooseFolder}
+                disabled={loading}
+                className="px-4 py-2 bg-indigo-primary text-slate-100 text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">sync</span>
+                Sync Device
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Table area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* Table area */}
         <div className="flex-1 overflow-auto p-4">
           <RecordingsTable recordings={recordings} onSelect={(id) => console.log('Selected:', id)} />
         </div>
-        <div className="border-t border-slate-border bg-slate-deep px-4 pb-4 pt-3">
-          <Footer>
-            <div className="flex items-center gap-6">
-              <span className="text-[10px] font-bold text-slate-500 uppercase">
-                Total Recordings: {recordings.length}
-              </span>
-              <span className="text-[10px] font-bold text-slate-500 uppercase">
-                Total Duration: {formatDuration(totalDuration)}
-              </span>
-            </div>
-          </Footer>
-        </div>
+      </div>
+
+      <div className="border-t border-slate-border bg-slate-deep px-4 pb-4 pt-3">
+        <Footer>
+          <div className="flex items-center gap-6">
+            <span className="text-[10px] font-bold text-slate-500 uppercase">
+              Total Recordings: {recordings.length}
+            </span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase">
+              Total Duration: {formatDuration(totalDuration)}
+            </span>
+          </div>
+        </Footer>
       </div>
     </main>
   );
