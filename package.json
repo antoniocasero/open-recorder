@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check:insights-regression": "rg -q \"transcriptionSeconds: recording\\.duration \\?\\? 0\" src/components/RecordingsTable.tsx && exit 1 || exit 0",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
