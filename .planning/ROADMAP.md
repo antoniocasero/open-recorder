@@ -86,7 +86,12 @@ Plans:
   1. User can navigate to insights page and view design mocks with professional appearance
   2. User can view transcription statistics dashboard with charts showing usage patterns and trends
   3. User can view key metrics display (total recordings, transcription minutes, language distribution)
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Persist transcription metadata (language + durations) for insights
+- [ ] 06-02-PLAN.md — Add Rust aggregation command + TS payload types
+- [ ] 06-03-PLAN.md — Build Insights dashboard UI with Recharts + export report
 
 ## Progress
 
@@ -100,7 +105,7 @@ Phases execute in numeric order: 4 → 5 → 6
 | 3. Advanced Features & Scalability | v1.0 | 6/6 | Complete | 2026-01-26 |
 | 4. UI Fixes & Enhancements | v1.1 | 2/2 | Complete | 2026-01-27 |
 | 5. Editor State Persistence | v1.1 | 2/2 | Complete | 2026-01-27 |
-| 6. Insights Page | v1.1 | 0/TBD | Not started | - |
+| 6. Insights Page | v1.1 | 0/3 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-26 for milestone v1.1*
