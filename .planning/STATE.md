@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can easily record, organize, and listen to audio recordings with a simple, fast desktop interface.
-**Current focus:** Planning Phase 6 (Insights Page)
+**Current focus:** Executing Phase 6 (Insights Page)
 
 ## Current Position
 
 Phase: 6 of 6 (Insights Page)
-Plan: —
-Status: Ready for planning
-Last activity: 2026-01-27 — Phase 5 complete (editor state persistence)
+Plan: 02 of 3
+Status: In progress
+Last activity: 2026-01-28 — Completed 06-01-PLAN.md
 
-Progress: █████████░ 90% (19/21 plans)
+Progress: █████████░ 96% (23/24 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-  - Total plans completed: 19
-  - Average duration: 8 min
-  - Total execution time: 2.4 hours
+  - Total plans completed: 23
+  - Average duration: 7 min
+  - Total execution time: 2.5 hours
 
 **By Phase:**
 
@@ -34,7 +34,7 @@ Progress: █████████░ 90% (19/21 plans)
 | 5 | 2 | 18 min | 9 min |
 
 **Recent Trend:**
-  - Last 5 plans: [05-02, 05-01, 04-02, 04-01, 03-06]
+  - Last 5 plans: [06-01, 06-02, 05-02, 05-01, 04-02]
   - Trend: Steady
 
 *Updated after each plan completion*
@@ -55,6 +55,8 @@ Recent decisions affecting current work:
 - [01-02]: Client configuration via OpenAIConfig with API key from environment variable
 - [01-02]: Word-level timestamp extraction using verbose JSON response
 - [01-02]: Sidecar .txt file saving pattern alongside original audio
+- [06-02]: Use serde rename_all=camelCase so Rust insights payload matches TS contract
+- [06-01]: Persist transcription analytics inputs under transcriptionMetaByPath keyed by full audio path
 
 ### Pending Todos
 
@@ -70,8 +72,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-27 20:00
-Stopped at: Phase 5 complete
+Last session: 2026-01-28 09:57
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
 
 Config:
