@@ -91,7 +91,7 @@ export function RecordingsTable({ recordings, onSelect }: RecordingsTableProps) 
           await setTranscriptionMeta(recording.path, {
             language: 'unknown',
             transcribedAt: Date.now(),
-            transcriptionSeconds: recording.duration ?? 0,
+            ...(recording.duration != null ? { transcriptionSeconds: recording.duration } : {}),
             audioSeconds: recording.duration,
           });
         } catch (error) {
