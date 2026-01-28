@@ -4,6 +4,7 @@
 
 - ✅ **v1.0 Transcription MVP** - Phases 1-3 (shipped 2026-01-26)
 - ✅ **v1.1 UI & Insights Enhancements** - Phases 4-6 (shipped 2026-01-28)
+- 🚧 **v1.1.1 Audit Gap Closure** - Phases 7-8
 
 ## Phases
 
@@ -93,6 +94,32 @@ Plans:
 - [x] 06-02-PLAN.md — Add Rust aggregation command + TS payload types
 - [x] 06-03-PLAN.md — Build Insights dashboard UI with Recharts + export report
 
+---
+
+### 🚧 v1.1.1 Audit Gap Closure (Post-ship)
+
+**Milestone Goal:** Close v1.1 audit blockers (Insights accuracy edge case + missing phase verification artifacts).
+
+#### Phase 7: Insights Accuracy Fix
+**Goal**: Insights totals remain accurate even when existing transcripts are detected before audio duration metadata is available.
+**Depends on**: Phase 6
+**Gap Closure:** Closes `v1.1-v1.1-MILESTONE-AUDIT.md` integration + flow gaps.
+**Plans**: 2 plans
+
+Plans:
+- [x] 07-01-PLAN.md — Prevent persisting `transcriptionSeconds=0` when duration is unknown
+- [x] 07-02-PLAN.md — Backfill/repair existing stored metadata + add regression check
+
+#### Phase 8: Phase Verification Artifacts
+**Goal**: Each v1.1 phase has a phase-level `*-VERIFICATION.md` artifact so the milestone can be re-audited as passed.
+**Depends on**: Phase 7
+**Gap Closure:** Closes `v1.1-v1.1-MILESTONE-AUDIT.md` "missing verification artifacts" blocker.
+**Plans**: (created by /gsd/plan-phase)
+
+Plans:
+- [ ] 08-01-PLAN.md — Create `04-VERIFICATION.md`, `05-VERIFICATION.md`, `06-VERIFICATION.md` from final code state
+- [ ] 08-02-PLAN.md — Re-run milestone audit and record results
+
 ## Progress
 
 **Execution Order:**
@@ -106,6 +133,8 @@ Phases execute in numeric order: 4 → 5 → 6
 | 4. UI Fixes & Enhancements | v1.1 | 2/2 | Complete | 2026-01-27 |
 | 5. Editor State Persistence | v1.1 | 2/2 | Complete | 2026-01-27 |
 | 6. Insights Page | v1.1 | 3/3 | Complete | 2026-01-28 |
+| 7. Insights Accuracy Fix | v1.1.1 | 2/2 | Complete | 2026-01-28 |
+| 8. Phase Verification Artifacts | v1.1.1 | 0/2 | Planned | — |
 
 ---
 *Roadmap created: 2026-01-26 for milestone v1.1*

@@ -1,16 +1,20 @@
 # Open Recorder Tauri
 
-Aplicación de escritorio para reproducir y gestionar grabaciones de audio, construida con Tauri y Next.js.
+Desktop application to play and manage audio recordings, built with Tauri and Next.js.
 
-## Requisitos Previos
+## Purpose
 
-Antes de ejecutar este proyecto, asegúrate de tener instalado:
+Open Recorder aims to fill the gap between AR recorders and traditional recorders. It is not the Plaud system, but it is similar in intent: provide an analysis layer on top of recordings without relying on external services. The idea is that the software performs the full analysis locally, including descriptions, summaries, action points, and key insights.
 
-- **Node.js** (versión 18 o superior) - [Descargar Node.js](https://nodejs.org/)
-- **Rust** (última versión estable) - [Instalar Rust](https://www.rust-lang.org/tools/install)
-- **npm** (incluido con Node.js)
+## Prerequisites
 
-### Verificar Instalación
+Before running this project, make sure you have:
+
+- **Node.js** (version 18 or later) - [Download Node.js](https://nodejs.org/)
+- **Rust** (latest stable) - [Install Rust](https://www.rust-lang.org/tools/install)
+- **npm** (included with Node.js)
+
+### Verify installation
 
 ```bash
 node --version
@@ -19,97 +23,101 @@ rustc --version
 cargo --version
 ```
 
-## Instalación Rápida
+## Quick setup
 
-Ejecuta el script de configuración:
+Run the setup script:
 
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
-O sigue los pasos manuales a continuación.
+Or follow the manual steps below.
 
-## Instalación Manual
+## Manual setup
 
-1. **Instalar dependencias de Node.js:**
+1. **Install Node.js dependencies:**
    ```bash
    npm install
    ```
 
-2. **Las dependencias de Rust se instalarán automáticamente** cuando ejecutes Tauri por primera vez.
+2. **Rust dependencies install automatically** the first time you run Tauri.
 
-## Ejecutar en Modo Desarrollo
-
-Para ejecutar la aplicación en modo desarrollo:
+## Run in development
 
 ```bash
 npm run tauri:dev
 ```
 
-Este comando:
-- Inicia el servidor de desarrollo de Next.js
-- Compila el backend de Rust/Tauri
-- Abre la ventana de la aplicación de escritorio
+This command:
+- Starts the Next.js development server
+- Builds the Rust/Tauri backend
+- Opens the desktop application window
 
-## Construir para Producción
-
-Para crear una versión de producción:
+## Build for production
 
 ```bash
 npm run tauri:build
 ```
 
-El ejecutable se generará en:
+The executable will be generated at:
 - **macOS**: `src-tauri/target/release/bundle/macos/`
 - **Windows**: `src-tauri/target/release/bundle/msi/`
 - **Linux**: `src-tauri/target/release/bundle/appimage/`
 
-## Scripts Disponibles
+## Available scripts
 
-- `npm run dev` - Ejecuta solo Next.js (sin Tauri)
-- `npm run build` - Construye solo Next.js
-- `npm run start` - Inicia el servidor de producción de Next.js
-- `npm run lint` - Ejecuta el linter de ESLint
-- `npm run tauri` - Ejecuta comandos de Tauri CLI
-- `npm run tauri:dev` - Modo desarrollo con Tauri
-- `npm run tauri:build` - Construye la aplicación de escritorio
+- `npm run dev` - Run Next.js only (no Tauri)
+- `npm run build` - Build Next.js only
+- `npm run start` - Start the Next.js production server
+- `npm run lint` - Run ESLint
+- `npm run tauri` - Run Tauri CLI commands
+- `npm run tauri:dev` - Dev mode with Tauri
+- `npm run tauri:build` - Build the desktop app
 
-## Estructura del Proyecto
+## Project structure
 
 ```
 open-recorder-tauri/
-├── app/                    # Páginas de Next.js (App Router)
+├── app/                    # Next.js pages (App Router)
 ├── src/
-│   ├── components/         # Componentes React
-│   └── lib/               # Utilidades y tipos TypeScript
-├── src-tauri/             # Backend Rust/Tauri
-│   ├── src/               # Código Rust
-│   └── tauri.conf.json    # Configuración de Tauri
-└── plan/                  # Planificación del proyecto
+│   ├── components/         # React components
+│   └── lib/                # TypeScript utilities and types
+├── src-tauri/              # Rust/Tauri backend
+│   ├── src/                # Rust code
+│   └── tauri.conf.json     # Tauri configuration
+└── plan/                   # Project planning
 ```
 
-## Solución de Problemas
+## Screenshots
+
+![Library editor view](plan/design/editor_page/screen.png)
+
+![Editor edit mode](plan/design/editor_page_edit_mode/screen.png)
+
+![Insights dashboard](plan/design/insights_page/screen.png)
+
+## Troubleshooting
 
 ### Error: "tauri: command not found"
-Asegúrate de haber ejecutado `npm install` para instalar `@tauri-apps/cli`.
+Make sure you ran `npm install` to install `@tauri-apps/cli`.
 
-### Error de compilación de Rust
-Verifica que Rust esté correctamente instalado:
+### Rust build error
+Verify Rust is installed and updated:
 ```bash
 rustup update
 ```
 
-### Puerto 3000 ya en uso
-Si el puerto 3000 está ocupado, puedes cambiarlo editando `package.json` o usando una variable de entorno.
+### Port 3000 already in use
+If port 3000 is busy, edit `package.json` or set a different port using an environment variable.
 
-## Desarrollo
+## Development
 
-Este proyecto utiliza:
+This project uses:
 - **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
 - **Backend**: Tauri 2.x, Rust
-- **Iconos**: Lucide React
+- **Icons**: Lucide React
 
-## Licencia
+## License
 
-[Especificar licencia aquí]
+MIT

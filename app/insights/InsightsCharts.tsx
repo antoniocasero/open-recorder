@@ -53,14 +53,9 @@ export function InsightsCharts({ payload, seriesLabels }: Props) {
     minutes: item.transcribedSeconds / 60,
   }));
 
-  const fileTypeData = payload.fileTypeDistribution.map((item) => ({
-    ext: item.ext?.trim() ? item.ext : 'unknown',
-    minutes: item.seconds / 60,
-  }));
-
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <ChartCard title="Minutes per day" className="h-72">
+      <ChartCard title="Minutes per day" className="h-72 lg:col-span-2">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={seriesData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
             <defs>
@@ -145,27 +140,6 @@ export function InsightsCharts({ payload, seriesLabels }: Props) {
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="File types" className="h-56">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={fileTypeData} layout="vertical" margin={{ top: 8, right: 16, left: 16, bottom: 0 }}>
-            <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
-            <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={{ stroke: '#334155' }} />
-            <YAxis
-              type="category"
-              dataKey="ext"
-              tick={{ fill: '#94a3b8', fontSize: 11 }}
-              axisLine={{ stroke: '#334155' }}
-              width={70}
-            />
-            <Tooltip
-              contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: 8 }}
-              labelStyle={{ color: '#e2e8f0' }}
-              itemStyle={{ color: '#e2e8f0' }}
-            />
-            <Bar dataKey="minutes" fill="#a78bfa" radius={[0, 6, 6, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
     </div>
   );
 }
