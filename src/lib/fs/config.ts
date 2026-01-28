@@ -11,6 +11,15 @@ export type TranscriptionMeta = {
   audioSeconds?: number;
 };
 
+function sanitizeTranscriptionMeta(meta: TranscriptionMeta): { meta: TranscriptionMeta; changed: boolean } {
+  if (meta.transcriptionSeconds === 0 && meta.audioSeconds == null) {
+    const sanitized = { ...meta };
+    delete sanitized.transcriptionSeconds;
+    return { meta: sanitized, changed: true };
+  }
+  return { meta, changed: false };
+}
+
 let store: Store | null = null;
 
 async function getStore(): Promise<Store> {
@@ -70,8 +79,27 @@ type TranscriptionMetaByPath = Record<string, TranscriptionMeta>;
 
 export async function getAllTranscriptionMeta(): Promise<TranscriptionMetaByPath> {
   const s = await getStore();
-  const all = await s.get<TranscriptionMetaByPath>('transcriptionMetaByPath');
-  return all ?? {};
+  const all = (await s.get<TranscriptionMetaByPath>('transcriptionMetaByPath')) ?? {};
+  let repairedCount = 0;
+  const sanitized: TranscriptionMetaByPath = {};
+
+  for (const [audioPath, meta] of Object.entries(all)) {
+    const { meta: normalized, changed } = sanitizeTranscriptionMeta(meta);
+    sanitized[audioPath] = normalized;
+    if (changed) {
+      repairedCount += 1;
+    }
+  }
+
+  if (repairedCount > 0) {
+    await s.set('transcriptionMetaByPath', sanitized);
+    await s.save();
+    console.warn(
+      `Repaired ${repairedCount} transcriptionMetaByPath entries (removed transcriptionSeconds=0 when audioSeconds missing)`,
+    );
+  }
+
+  return sanitized;
 }
 
 export async function getTranscriptionMeta(audioPath: string): Promise<TranscriptionMeta | null> {
@@ -82,7 +110,8 @@ export async function getTranscriptionMeta(audioPath: string): Promise<Transcrip
 export async function setTranscriptionMeta(audioPath: string, meta: TranscriptionMeta): Promise<void> {
   const s = await getStore();
   const all = (await s.get<TranscriptionMetaByPath>('transcriptionMetaByPath')) ?? {};
-  all[audioPath] = meta;
+  const { meta: sanitized } = sanitizeTranscriptionMeta(meta);
+  all[audioPath] = sanitized;
   await s.set('transcriptionMetaByPath', all);
   await s.save();
 }
