@@ -9,15 +9,15 @@ Requirements for milestone v1.1. Each maps to roadmap phases.
 
 ### Insights
 
-- [ ] **INSIGHTS-01**: User can view design mocks for insights page (professional appearance)
-- [ ] **INSIGHTS-02**: User can view transcription statistics dashboard with charts (usage patterns, trends)
-- [ ] **INSIGHTS-03**: User can view key metrics display (total recordings, transcription minutes, language distribution)
+- [x] **INSIGHTS-01**: User can view design mocks for insights page (professional appearance)
+- [x] **INSIGHTS-02**: User can view transcription statistics dashboard with charts (usage patterns, trends)
+- [x] **INSIGHTS-03**: User can view key metrics display (total recordings, transcription minutes, language distribution)
 
 ### UI Fixes
 
-- [ ] **UI-FIXES-01**: User can trigger correct action via library page action button
-- [ ] **UI-FIXES-02**: User can see accurate duration for each recording in library list
-- [ ] **UI-FIXES-03**: User can access pagination/actions via sticky footer while scrolling
+- [x] **UI-FIXES-01**: User can trigger correct action via library page action button
+- [x] **UI-FIXES-02**: User can see accurate duration for each recording in library list
+- [x] **UI-FIXES-03**: User can access pagination/actions via sticky footer while scrolling
 
 ### Editor Storage
 
@@ -50,12 +50,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INSIGHTS-01 | Phase 6 | Pending |
-| INSIGHTS-02 | Phase 6 | Pending |
-| INSIGHTS-03 | Phase 6 | Pending |
-| UI-FIXES-01 | Phase 4 | Pending |
-| UI-FIXES-02 | Phase 4 | Pending |
-| UI-FIXES-03 | Phase 4 | Pending |
+| INSIGHTS-01 | Phase 6 | Complete |
+| INSIGHTS-02 | Phase 6 | Complete |
+| INSIGHTS-03 | Phase 6 | Complete |
+| UI-FIXES-01 | Phase 4 | Complete |
+| UI-FIXES-02 | Phase 4 | Complete |
+| UI-FIXES-03 | Phase 4 | Complete |
 | EDITOR-01 | Phase 5 | Complete |
 
 **Coverage:**
@@ -65,4 +65,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-26*
-*Last updated: 2026-01-27 after Phase 5 completion*
+*Last updated: 2026-01-28 after Phase 6 completion*

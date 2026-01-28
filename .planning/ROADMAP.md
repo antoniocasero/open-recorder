@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 Transcription MVP** - Phases 1-3 (shipped 2026-01-26)
-- 🚧 **v1.1 UI & Insights Enhancements** - Phases 4-6 (in planning)
+- ✅ **v1.1 UI & Insights Enhancements** - Phases 4-6 (shipped 2026-01-28)
 
 ## Phases
 
@@ -89,9 +89,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Persist transcription metadata (language + durations) for insights
-- [ ] 06-02-PLAN.md — Add Rust aggregation command + TS payload types
-- [ ] 06-03-PLAN.md — Build Insights dashboard UI with Recharts + export report
+- [x] 06-01-PLAN.md — Persist transcription metadata (language + durations) for insights
+- [x] 06-02-PLAN.md — Add Rust aggregation command + TS payload types
+- [x] 06-03-PLAN.md — Build Insights dashboard UI with Recharts + export report
 
 ## Progress
 
@@ -105,7 +105,7 @@ Phases execute in numeric order: 4 → 5 → 6
 | 3. Advanced Features & Scalability | v1.0 | 6/6 | Complete | 2026-01-26 |
 | 4. UI Fixes & Enhancements | v1.1 | 2/2 | Complete | 2026-01-27 |
 | 5. Editor State Persistence | v1.1 | 2/2 | Complete | 2026-01-27 |
-| 6. Insights Page | v1.1 | 0/3 | Not started | - |
+| 6. Insights Page | v1.1 | 3/3 | Complete | 2026-01-28 |
 
 ---
 *Roadmap created: 2026-01-26 for milestone v1.1*

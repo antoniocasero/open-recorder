@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can easily record, organize, and listen to audio recordings with a simple, fast desktop interface.
-**Current focus:** Completed Phase 6 (Insights Page)
+**Current focus:** Milestone v1.1 complete
 
 ## Current Position
 
