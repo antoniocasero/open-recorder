@@ -4,6 +4,13 @@ import { DEFAULT_EDITOR_STATE } from '../editor/state';
 
 export type EditorActionsCompletionMap = Record<string, boolean>;
 
+export type TranscriptionMeta = {
+  language: string;
+  transcribedAt: number;
+  transcriptionSeconds?: number;
+  audioSeconds?: number;
+};
+
 let store: Store | null = null;
 
 async function getStore(): Promise<Store> {
@@ -56,5 +63,26 @@ export async function setEditorActionsCompletion(
   const all = (await s.get<EditorActionsCompletionByRecording>('editorActionsCompletion')) ?? {};
   all[recordingPath] = completion;
   await s.set('editorActionsCompletion', all);
+  await s.save();
+}
+
+type TranscriptionMetaByPath = Record<string, TranscriptionMeta>;
+
+export async function getAllTranscriptionMeta(): Promise<TranscriptionMetaByPath> {
+  const s = await getStore();
+  const all = await s.get<TranscriptionMetaByPath>('transcriptionMetaByPath');
+  return all ?? {};
+}
+
+export async function getTranscriptionMeta(audioPath: string): Promise<TranscriptionMeta | null> {
+  const all = await getAllTranscriptionMeta();
+  return all[audioPath] ?? null;
+}
+
+export async function setTranscriptionMeta(audioPath: string, meta: TranscriptionMeta): Promise<void> {
+  const s = await getStore();
+  const all = (await s.get<TranscriptionMetaByPath>('transcriptionMetaByPath')) ?? {};
+  all[audioPath] = meta;
+  await s.set('transcriptionMetaByPath', all);
   await s.save();
 }
