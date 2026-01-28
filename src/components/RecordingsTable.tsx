@@ -7,6 +7,7 @@ import { StatusBadge } from './StatusBadge';
 import { WaveformPlaceholder } from './WaveformPlaceholder';
 import { readTranscript, transcribeAudio } from '@/lib/transcription/commands';
 import { Transcript } from '@/lib/transcription/types';
+import { setTranscriptionMeta } from '@/lib/fs/config';
 import { TranscriptionModal } from './TranscriptionModal';
 
 interface RecordingsTableProps {
@@ -86,6 +87,17 @@ export function RecordingsTable({ recordings, onSelect }: RecordingsTableProps) 
     try {
       const existingTranscript = await readTranscript(recording.path);
       if (existingTranscript) {
+        try {
+          await setTranscriptionMeta(recording.path, {
+            language: 'unknown',
+            transcribedAt: Date.now(),
+            transcriptionSeconds: recording.duration ?? 0,
+            audioSeconds: recording.duration,
+          });
+        } catch (error) {
+          console.warn('Failed to persist transcription metadata:', error);
+        }
+
         const transcript: Transcript = {
           text: existingTranscript,
           words: [],
@@ -102,6 +114,18 @@ export function RecordingsTable({ recordings, onSelect }: RecordingsTableProps) 
       }
 
       const transcript = await transcribeAudio(recording.path);
+
+      try {
+        await setTranscriptionMeta(recording.path, {
+          language: transcript.language?.trim() || 'unknown',
+          transcribedAt: Date.now(),
+          transcriptionSeconds: transcript.duration,
+          audioSeconds: recording.duration,
+        });
+      } catch (error) {
+        console.warn('Failed to persist transcription metadata:', error);
+      }
+
       setActiveTranscript(transcript);
       setShowTranscriptModal(true);
       setTranscriptStatus((prev) => ({

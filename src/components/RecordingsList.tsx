@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { AudioItem } from '@/lib/types'
 import { transcribeAudio, transcribeAudioBatch } from '@/lib/transcription/commands'
 import { TranscriptionState, Transcript } from '@/lib/transcription/types'
+import { setTranscriptionMeta } from '@/lib/fs/config'
 import toast, { Toaster } from 'react-hot-toast'
 import { TranscriptionModal } from './TranscriptionModal'
 
@@ -88,6 +89,23 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
         })
         return next
       })
+
+      await Promise.all(
+        selectedRecordings.map(async (recording, index) => {
+          const result = results[index]
+          if (typeof result === 'string') return
+          try {
+            await setTranscriptionMeta(recording.path, {
+              language: result.language?.trim() || 'unknown',
+              transcribedAt: Date.now(),
+              transcriptionSeconds: result.duration,
+              audioSeconds: recording.duration,
+            })
+          } catch (error) {
+            console.warn('Failed to persist transcription metadata:', error)
+          }
+        }),
+      )
       
       // Show summary toast
       if (successCount > 0) {
@@ -132,6 +150,18 @@ export function RecordingsList({ recordings, selectedId, onSelect }: RecordingsL
     
     try {
       const transcript = await transcribeAudio(recording.path)
+
+      try {
+        await setTranscriptionMeta(recording.path, {
+          language: transcript.language?.trim() || 'unknown',
+          transcribedAt: Date.now(),
+          transcriptionSeconds: transcript.duration,
+          audioSeconds: recording.duration,
+        })
+      } catch (error) {
+        console.warn('Failed to persist transcription metadata:', error)
+      }
+
       setTranscriptionStates(prev => ({
         ...prev,
         [recording.id]: { status: 'success', transcript }
