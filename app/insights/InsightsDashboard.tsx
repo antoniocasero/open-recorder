@@ -6,8 +6,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Footer } from '@/components/Footer';
 import { getAllTranscriptionMeta, getLastFolder } from '@/lib/fs/config';
 import { getLibraryInsights } from '@/lib/insights/commands';
-import { formatMinutes, formatPct } from '@/lib/insights/format';
+import { exportInsightsReport } from '@/lib/insights/export';
+import { formatDayLabel, formatMinutes, formatPct } from '@/lib/insights/format';
 import type { InsightsRangePreset, LibraryInsightsPayload } from '@/lib/insights/types';
+
+import { InsightsCharts } from './InsightsCharts';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -73,6 +76,7 @@ export function InsightsDashboard() {
   const [payload, setPayload] = useState<LibraryInsightsPayload | null>(null);
   const [loadState, setLoadState] = useState<LoadState>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +128,26 @@ export function InsightsDashboard() {
   }, [canLoad, preset]);
 
   const kpis = payload?.kpis;
+  const seriesLabels = useMemo(() => {
+    if (!payload) return {} as Record<number, string>;
+    const next: Record<number, string> = {};
+    for (const point of payload.series) {
+      next[point.dayStartUnix] = formatDayLabel(point.dayStartUnix, payload.preset);
+    }
+    return next;
+  }, [payload]);
+
+  async function handleExport() {
+    if (!payload) return;
+    setExporting(true);
+    try {
+      await exportInsightsReport(payload);
+    } catch (err) {
+      console.error('Failed to export insights report:', err);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <main className="flex flex-col h-full">
@@ -160,12 +184,13 @@ export function InsightsDashboard() {
 
               <button
                 type="button"
-                disabled
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-border bg-slate-panel/50 px-3 py-2 text-sm font-medium text-slate-400 opacity-60"
-                title="Export report (enabled once charts are wired)"
+                disabled={!payload || exporting}
+                onClick={handleExport}
+                className="inline-flex items-center gap-2 rounded-lg bg-indigo-primary px-3 py-2 text-sm font-medium text-slate-100 hover:bg-indigo-600 disabled:opacity-60 disabled:hover:bg-indigo-primary"
+                title={!payload ? 'Load insights to export a report' : 'Export report as JSON'}
               >
-                <span className="material-symbols-outlined text-lg">download</span>
-                Export report
+                <span className="material-symbols-outlined text-lg">{exporting ? 'sync' : 'download'}</span>
+                {exporting ? 'Exporting' : 'Export report'}
               </button>
             </div>
           </div>
@@ -228,16 +253,20 @@ export function InsightsDashboard() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <div className="h-56 rounded-xl border border-slate-border bg-slate-panel/60 p-4">
-                  <div className="text-sm font-semibold text-slate-200">Trends</div>
-                  <div className="mt-2 text-sm text-slate-500">Charts will appear here once wired.</div>
+              {payload ? (
+                <InsightsCharts payload={payload} seriesLabels={seriesLabels} />
+              ) : (
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div className="h-72 rounded-xl border border-slate-border bg-slate-panel/60 p-4">
+                    <SkeletonBlock className="h-4 w-32" />
+                    <SkeletonBlock className="mt-4 h-48 w-full" />
+                  </div>
+                  <div className="h-56 rounded-xl border border-slate-border bg-slate-panel/60 p-4">
+                    <SkeletonBlock className="h-4 w-32" />
+                    <SkeletonBlock className="mt-4 h-32 w-full" />
+                  </div>
                 </div>
-                <div className="h-56 rounded-xl border border-slate-border bg-slate-panel/60 p-4">
-                  <div className="text-sm font-semibold text-slate-200">Distribution</div>
-                  <div className="mt-2 text-sm text-slate-500">Charts will appear here once wired.</div>
-                </div>
-              </div>
+              )}
             </div>
           )}
         </div>
