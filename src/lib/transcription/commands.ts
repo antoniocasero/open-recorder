@@ -21,11 +21,18 @@ export async function transcribeAudioBatch(filePaths: string[]): Promise<Array<T
  * @returns Path to the transcript .txt file if it exists, null otherwise
  */
 export async function getTranscriptPath(audioPath: string): Promise<string | null> {
-  // Simple heuristic: replace extension with .txt
-  const transcriptPath = audioPath.replace(/\.[^/.]+$/, '.txt')
-  // TODO: actually check if file exists (requires additional Tauri command)
-  // For now, return the expected path
-  return transcriptPath
+  try {
+    const path = await invoke<{ Ok: string | null } | { Err: string }>('get_transcript_path', { source_path: audioPath })
+    if ('Ok' in path) {
+      return path.Ok
+    } else {
+      console.warn(`Failed to get transcript path: ${path.Err}`)
+      return null
+    }
+  } catch (error) {
+    console.warn(`Error calling get_transcript_path:`, error)
+    return null
+  }
 }
 
 /**

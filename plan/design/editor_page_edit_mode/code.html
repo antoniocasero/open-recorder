@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Transcription Editor - Edit Mode | Open Recorder</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "slate-deep": "#0f172a",
+                        "indigo-primary": "#6366f1",
+                        "slate-muted": "#64748b",
+                        "slate-border": "#1e293b",
+                        "slate-surface": "#1e293b4d",
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+            font-size: 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        .waveform-bar {
+            @apply bg-indigo-primary/30 rounded-full transition-all duration-300;
+        }
+        .waveform-bar.active {
+            @apply bg-indigo-primary;
+        }
+        .sidebar-dimmed {
+            @apply opacity-40 grayscale-[20%] pointer-events-none transition-opacity duration-300;
+        }
+        .editable-block:focus-within {
+            @apply ring-2 ring-indigo-primary border-indigo-primary/50 bg-indigo-primary/5;
+        }
+    </style>
+</head>
+<body class="text-slate-muted antialiased h-screen overflow-hidden">
+<div class="flex flex-col h-full bg-slate-deep">
+<header class="h-16 border-b border-slate-border px-6 flex items-center justify-between shrink-0 bg-slate-deep/80 backdrop-blur-md z-10">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-indigo-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined !text-xl">graphic_eq</span>
+</div>
+<div>
+<h1 class="text-sm font-semibold text-slate-100 leading-tight">Open Recorder</h1>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Transcription Suite</p>
+</div>
+</div>
+<nav class="flex items-center gap-8 text-sm font-medium">
+<a class="text-slate-400 hover:text-slate-100" href="#">Library</a>
+<a class="text-indigo-primary border-b-2 border-indigo-primary py-5" href="#">Editor</a>
+<a class="text-slate-400 hover:text-slate-100" href="#">Insights</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-slate-100"><span class="material-symbols-outlined">settings</span></button>
+<div class="size-8 rounded-full border border-slate-border bg-center bg-cover" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBjsvgnJm7u8dyj8qBzIicl2_YrAUhVR7H8bZtLqjultzqJRDlmZfh1_-E1M3dXfQq46CZkfPy9o1TQkw0AOls8IU-2qDr7PuLdVDMP_Htr7AePv2uTSHEBIJwOJF34SSP0XqqsUDTEXx8QS2oBC-pE6BgB9TKSfVy31-6ElEAkAxc8BXk6kVD1HDhYO6h3VDtytdLQWZnCOR_gm9ufLMfFakLrrMRIdmCxUJAgXqXE8H7VP2TaV5iikJit4oOfy7C-jEDsYOE6XLlf");'></div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<aside class="sidebar-dimmed w-[320px] border-r border-slate-border flex flex-col p-6 overflow-y-auto custom-scrollbar shrink-0">
+<div class="mb-8">
+<h2 class="text-lg font-semibold text-slate-100 truncate">Product_Sync_Oct24.wav</h2>
+<div class="flex items-center gap-3 mt-2 text-xs font-medium text-slate-500">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined !text-xs">calendar_today</span> Oct 24, 2023</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined !text-xs">database</span> 45.2 MB</span>
+</div>
+</div>
+<div class="bg-slate-900/50 border border-slate-border rounded-2xl p-6 mb-6">
+<div class="flex items-end justify-between gap-1 h-32 mb-6">
+<div class="waveform-bar active h-[20%]" style="width: 4px;"></div>
+<div class="waveform-bar active h-[40%]" style="width: 4px;"></div>
+<div class="waveform-bar active h-[30%]" style="width: 4px;"></div>
+<div class="waveform-bar active h-[60%]" style="width: 4px;"></div>
+<div class="waveform-bar active h-[80%]" style="width: 4px;"></div>
+<div class="waveform-bar active h-[50%]" style="width: 4px;"></div>
+<div class="waveform-bar active h-[90%]" style="width: 4px;"></div>
+<div class="waveform-bar active h-[100%]" style="width: 4px;"></div>
+<div class="waveform-bar active h-[70%]" style="width: 4px;"></div>
+<div class="waveform-bar h-[60%]" style="width: 4px;"></div>
+<div class="waveform-bar h-[40%]" style="width: 4px;"></div>
+<div class="waveform-bar h-[30%]" style="width: 4px;"></div>
+<div class="waveform-bar h-[50%]" style="width: 4px;"></div>
+<div class="waveform-bar h-[20%]" style="width: 4px;"></div>
+<div class="waveform-bar h-[40%]" style="width: 4px;"></div>
+<div class="waveform-bar h-[30%]" style="width: 4px;"></div>
+<div class="waveform-bar h-[10%]" style="width: 4px;"></div>
+<div class="waveform-bar h-[20%]" style="width: 4px;"></div>
+</div>
+<div class="flex items-center justify-between text-[10px] text-slate-500 font-bold mb-6">
+<span>12:45</span>
+<span>45:12</span>
+</div>
+<div class="flex items-center justify-center gap-6">
+<button class="text-slate-400 hover:text-slate-100"><span class="material-symbols-outlined">replay_10</span></button>
+<button class="size-12 rounded-full bg-indigo-primary text-white flex items-center justify-center hover:scale-105 transition-transform">
+<span class="material-symbols-outlined !text-3xl !fill-1">pause</span>
+</button>
+<button class="text-slate-400 hover:text-slate-100"><span class="material-symbols-outlined">forward_10</span></button>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col bg-slate-deep overflow-hidden border-r border-slate-border">
+<div class="h-auto px-6 py-3 border-b border-slate-border flex flex-col gap-4 shrink-0 bg-slate-deep/50">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-primary/20 text-indigo-primary border border-indigo-primary/30">EDIT MODE</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200 transition-colors">
+                            Cancel
+                        </button>
+<button class="flex items-center gap-1.5 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white bg-indigo-primary rounded hover:bg-indigo-primary/90 shadow-lg shadow-indigo-primary/20 transition-colors">
+<span class="material-symbols-outlined !text-sm">save</span> Save Changes
+                        </button>
+</div>
+</div>
+<div class="flex items-center gap-3 bg-slate-900/60 p-2 rounded-lg border border-slate-border/50">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 !text-sm">search</span>
+<input class="w-full bg-slate-900 border border-slate-border/50 rounded pl-8 pr-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-primary text-slate-200 placeholder:text-slate-600" placeholder="Find..." type="text"/>
+</div>
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 !text-sm">find_replace</span>
+<input class="w-full bg-slate-900 border border-slate-border/50 rounded pl-8 pr-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-primary text-slate-200 placeholder:text-slate-600" placeholder="Replace with..." type="text"/>
+</div>
+<button class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-300 bg-slate-800 border border-slate-border rounded hover:bg-slate-700 transition-colors whitespace-nowrap">
+                        Replace All
+                    </button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-8">
+<div class="max-w-2xl mx-auto space-y-6">
+<div class="editable-block group flex flex-col p-4 rounded-xl border border-transparent transition-all">
+<div class="flex items-center justify-between mb-2">
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">Interviewer <span class="size-1 rounded-full bg-slate-600"></span></p>
+<span class="text-[10px] font-bold text-slate-600">00:00</span>
+</div>
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-slate-300 leading-relaxed text-[14px] p-0 resize-none overflow-hidden" rows="2">Thank you for joining us today. To start off, could you tell us a bit about your background and how you first became interested in user experience design?</textarea>
+</div>
+<div class="editable-block group flex flex-col p-4 rounded-xl border border-indigo-primary/50 bg-indigo-primary/5 ring-2 ring-indigo-primary transition-all">
+<div class="flex items-center justify-between mb-2">
+<p class="text-[10px] font-bold text-indigo-primary uppercase tracking-widest flex items-center gap-2">Sarah Thompson <span class="size-1 rounded-full bg-indigo-primary"></span></p>
+<span class="text-[10px] font-bold text-indigo-primary">02:14</span>
+</div>
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-slate-200 leading-relaxed text-[14px] p-0 resize-none overflow-hidden" rows="3">Sure. I started my career in graphic design back in the late nineties when the web was still very young. I quickly realized that how things worked was just as important as how they looked...</textarea>
+</div>
+<div class="editable-block group flex flex-col p-4 rounded-xl border border-transparent transition-all">
+<div class="flex items-center justify-between mb-2">
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">Interviewer <span class="size-1 rounded-full bg-slate-600"></span></p>
+<span class="text-[10px] font-bold text-slate-600">03:45</span>
+</div>
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-slate-300 leading-relaxed text-[14px] p-0 resize-none overflow-hidden" rows="2">That's a fascinating transition. How do you feel that early experience with print and static web design influences your approach to modern interactive applications?</textarea>
+</div>
+<div class="editable-block group flex flex-col p-4 rounded-xl border border-transparent transition-all">
+<div class="flex items-center justify-between mb-2">
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">Sarah Thompson <span class="size-1 rounded-full bg-slate-600"></span></p>
+<span class="text-[10px] font-bold text-slate-600">04:12</span>
+</div>
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-slate-300 leading-relaxed text-[14px] p-0 resize-none overflow-hidden" rows="2">I think it taught me the value of hierarchy and whitespace. Even in a complex dashboard or a data-heavy application, the basic principles of layout still apply.</textarea>
+</div>
+</div>
+</div>
+<footer class="h-10 border-t border-slate-border px-6 flex items-center justify-between shrink-0 bg-slate-900/50">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-indigo-primary animate-pulse"></div>
+<span class="text-[10px] font-bold text-indigo-400 uppercase tracking-tight">EDITING MODE</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-emerald-500"></div>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Auto-scroll: On</span>
+</div>
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Words: 1,422</span>
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Lang: EN-US</span>
+</div>
+<div class="flex items-center gap-4 text-[10px] font-bold text-slate-600">
+<span class="flex items-center gap-1.5 text-indigo-primary/80"><span class="material-symbols-outlined !text-xs">keyboard_command_key</span> S Save</span>
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined !text-xs">keyboard_command_key</span> F Find</span>
+<span class="flex items-center gap-1.5"><span class="material-symbols-outlined !text-xs">keyboard_capslock</span> Play</span>
+</div>
+</footer>
+</main>
+<aside class="sidebar-dimmed w-[360px] flex flex-col bg-slate-deep overflow-y-auto custom-scrollbar shrink-0">
+<div class="p-6 border-b border-slate-border flex items-center gap-2 shrink-0">
+<span class="material-symbols-outlined text-indigo-primary !fill-1">auto_awesome</span>
+<h2 class="text-sm font-bold text-slate-100 uppercase tracking-widest">AI Insights</h2>
+</div>
+<div class="p-6 space-y-8">
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">AI Summary</h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-primary/10 text-indigo-primary border border-indigo-primary/20">Generated</span>
+</div>
+<div class="bg-slate-900/40 rounded-xl p-4 border border-slate-border/50">
+<p class="text-sm text-slate-300 leading-relaxed">
+                            The conversation covers Sarah Thompson's transition from early graphic design (90s) to modern UX. Key themes include the enduring value of layout principles like hierarchy and whitespace in interactive data-heavy applications.
+                        </p>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Recommended Actions</h3>
+<button class="text-[10px] font-bold text-indigo-primary hover:underline">Add Task</button>
+</div>
+<div class="space-y-3">
+<div class="action-item group flex items-start gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-border/50">
+<div class="checkbox size-4 mt-0.5 rounded border border-slate-700 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined !text-[12px] text-white opacity-0">check</span>
+</div>
+<div class="flex-1">
+<p class="text-[13px] font-medium text-slate-200">Review Sarah's portfolio links</p>
+<p class="text-[10px] text-slate-500 mt-1">Extract specific project URLs mentioned at 04:30.</p>
+</div>
+</div>
+</div>
+</section>
+<section>
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Key Topics</h3>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-[11px] text-slate-300">Visual Hierarchy</span>
+<span class="px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-[11px] text-slate-300">UX Design</span>
+</div>
+</section>
+</div>
+</aside>
+</div>
+</div>
+
+</body></html>

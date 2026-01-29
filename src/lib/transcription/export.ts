@@ -115,17 +115,22 @@ function isTauriEnvironment(): boolean {
 
 export async function downloadFile(content: string, filename: string) {
   if (isTauriEnvironment()) {
-    const extension = getFileExtension(filename)
-    const filters = extension
-      ? [{ name: extension.toUpperCase(), extensions: [extension] }]
-      : undefined
-    const path = await save({
-      defaultPath: filename,
-      filters
-    })
-    if (!path) return
-    await invoke('save_export', { path, content })
-    return
+    try {
+      const extension = getFileExtension(filename)
+      const filters = extension
+        ? [{ name: extension.toUpperCase(), extensions: [extension] }]
+        : undefined
+      const path = await save({
+        defaultPath: filename,
+        filters
+      })
+      if (!path) return
+      await invoke('save_export', { path, content })
+      return
+    } catch (error) {
+      console.error('Failed to save via Tauri dialog, falling back to browser download:', error)
+      // Fall through to browser download
+    }
   }
 
   const blob = new Blob([content], { type: 'text/plain' })

@@ -9,8 +9,10 @@ use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 use symphonia::default::get_probe;
 use tauri_plugin_http;
+use tauri::AppHandle;
 
 mod commands;
+pub mod storage;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AudioItem {
@@ -207,6 +209,7 @@ fn preset_min_mtime(preset: &str, now: i64) -> Result<Option<i64>, String> {
 
 #[tauri::command]
 fn get_library_insights(
+    app: AppHandle,
     folder_path: String,
     preset: String,
     transcription_meta_by_path: Option<HashMap<String, TranscriptionMetaItem>>,
@@ -264,9 +267,18 @@ fn get_library_insights(
         }
 
         let duration_seconds = item.duration.unwrap_or(0.0);
-        let has_transcript = PathBuf::from(&item.path)
-            .with_extension("txt")
-            .exists();
+        let audio_path = PathBuf::from(&item.path);
+        let has_transcript = match crate::storage::get_managed_path(&app, &audio_path) {
+            Ok(managed_dir) => {
+                let managed_transcript = managed_dir.join("transcript.txt");
+                if managed_transcript.exists() {
+                    true
+                } else {
+                    audio_path.with_extension("txt").exists()
+                }
+            }
+            Err(_) => audio_path.with_extension("txt").exists(),
+        };
 
         let meta = transcription_meta_by_path
             .as_ref()
@@ -472,6 +484,11 @@ pub fn run() {
         scan_folder_for_audio,
         read_file_meta,
         get_library_insights,
+        storage::get_storage_root_command,
+        storage::get_insights_dir_command,
+        storage::ensure_audio_dir_command,
+        storage::list_managed_recordings,
+        storage::get_transcript_path,
         commands::transcription::transcribe_audio,
         commands::transcription::transcribe_audio_batch,
         commands::transcription::save_transcript,
