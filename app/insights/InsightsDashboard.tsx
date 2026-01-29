@@ -42,16 +42,14 @@ const TOP_KEYWORDS = [
 const RECENT_TRENDS = [
   {
     icon: 'trending_up',
-    tone: 'text-indigo-400',
-    border: 'border-l-indigo-500/40',
+    tone: 'text-indigo-primary',
     label: 'Mentioned 12x today',
     excerpt: '"...it\'s crucial that we address the latency issues in the dashboard component before the Q4 release..."',
     source: 'Engineering Sync',
   },
   {
     icon: 'check_circle',
-    tone: 'text-emerald-400',
-    border: 'border-l-emerald-500/40',
+    tone: 'text-emerald-500',
     label: 'Resolved theme',
     excerpt:
       '"...everyone agreed that the indigo palette provides better contrast than the previous slate-only version..."',
@@ -59,8 +57,7 @@ const RECENT_TRENDS = [
   },
   {
     icon: 'priority_high',
-    tone: 'text-amber-400',
-    border: 'border-l-amber-400/50',
+    tone: 'text-amber-500',
     label: 'Urgent concern',
     excerpt: '"...several users reported confusion regarding the global search placement on the insights page..."',
     source: 'UX Interview #12',
@@ -116,33 +113,77 @@ function EmptyState() {
   );
 }
 
+type InsightsOverviewProps = {
+  summary: string;
+  query: string;
+  onQueryChange: (value: string) => void;
+  preset: InsightsRangePreset;
+  setPreset: (value: InsightsRangePreset) => void;
+  PRESETS: Array<{ value: InsightsRangePreset; label: string }>;
+  exporting: boolean;
+  handleExport: () => Promise<void>;
+};
+
 function InsightsOverview({
   summary,
   query,
   onQueryChange,
-}: {
-  summary: string;
-  query: string;
-  onQueryChange: (value: string) => void;
-}) {
+  preset,
+  setPreset,
+  PRESETS,
+  exporting,
+  handleExport,
+}: InsightsOverviewProps) {
   return (
-    <div className="rounded-2xl border border-slate-border bg-gradient-to-br from-slate-900/40 via-slate-panel/40 to-slate-panel/10 p-6">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-100">Aggregated AI Insights</h2>
-          <p className="mt-2 text-sm text-slate-400">{summary}</p>
+    <div className="border-b border-slate-border bg-slate-900/20 p-8">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold text-slate-100 mb-2">Aggregated AI Insights</h2>
+          <p className="text-sm text-slate-500">{summary}</p>
+          <div className="relative w-full mt-8 max-w-2xl">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+              search
+            </span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder="Search across all transcripts for keywords, topics, or speaker names..."
+              className="w-full rounded-xl border border-slate-border bg-slate-900 py-3 pl-12 pr-4 text-sm text-slate-200 placeholder:text-slate-600 shadow-xl focus:ring-1 focus:ring-indigo-primary focus:outline-none"
+            />
+          </div>
         </div>
-        <div className="relative w-full lg:max-w-xl">
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-            search
-          </span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search across all transcripts for keywords, topics, or speakers..."
-            className="w-full rounded-xl border border-slate-border bg-slate-900/70 py-3 pl-12 pr-4 text-sm text-slate-200 placeholder:text-slate-500 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
-          />
+
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="inline-flex rounded-lg border border-slate-border bg-slate-panel/60 p-1">
+            {PRESETS.map((option) => {
+              const active = option.value === preset;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setPreset(option.value)}
+                  className={
+                    active
+                      ? 'rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-100'
+                      : 'rounded-md px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200'
+                  }
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-2 rounded-lg border border-slate-border bg-slate-panel/60 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-lg">download</span>
+            {exporting ? 'Exporting...' : 'Export CSV'}
+          </button>
         </div>
       </div>
     </div>
@@ -162,8 +203,8 @@ function TopicCloud() {
             key={topic.label}
             className={
               topic.featured
-                ? 'rounded-full border border-indigo-500/40 bg-indigo-500/10 px-4 py-2 text-[13px] font-semibold text-indigo-300 shadow-lg shadow-indigo-500/5 ring-1 ring-indigo-400/20'
-                : 'rounded-full border border-slate-700 bg-slate-900/50 px-4 py-2 text-[13px] text-slate-300 transition hover:border-indigo-400/50 hover:bg-indigo-500/10 hover:text-indigo-200'
+                ? 'rounded-full border border-indigo-500/40 bg-indigo-500/20 px-4 py-2 text-[13px] font-semibold text-indigo-400 cursor-pointer transition-all shadow-lg shadow-indigo-500/5'
+                : 'rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-[13px] text-slate-200 cursor-pointer transition-all hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-500'
             }
           >
             {topic.label}
@@ -179,20 +220,20 @@ function TopKeywords() {
     <div className="rounded-2xl border border-slate-border bg-slate-panel/50 p-6">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Top keywords</h3>
-        <button type="button" className="text-[10px] font-bold text-indigo-400 hover:text-indigo-200">
-          Full report
+        <button type="button" className="text-[10px] font-bold text-indigo-primary hover:underline">
+          Full Report
         </button>
       </div>
       <div className="mt-6 space-y-4">
         {TOP_KEYWORDS.map((keyword) => (
           <div key={keyword.label} className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] uppercase tracking-tight text-slate-400">
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-tighter text-slate-400">
               <span>{keyword.label}</span>
               <span>{keyword.mentions} mentions</span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
               <div
-                className="h-full rounded-full bg-indigo-400/70"
+                className="chart-bar h-full rounded-sm bg-indigo-primary/40 transition-all duration-500 hover:bg-indigo-primary"
                 style={{ width: `${Math.round(keyword.pct * 100)}%` }}
               />
             </div>
@@ -211,16 +252,16 @@ function RecentTrends() {
         {RECENT_TRENDS.map((trend) => (
           <div
             key={trend.label}
-            className={`rounded-xl border border-slate-border bg-slate-panel/40 p-4 transition-colors hover:bg-slate-panel/60 border-l-2 ${trend.border}`}
+            className="group rounded-xl border border-slate-border bg-slate-900/20 p-4 transition-colors hover:bg-slate-900/40 cursor-pointer"
           >
-            <div className="flex items-center gap-2">
-              <span className={`material-symbols-outlined text-sm ${trend.tone}`}>{trend.icon}</span>
+            <div className="flex items-center gap-2 mb-3">
+              <span className={`material-symbols-outlined !text-sm ${trend.tone}`}>{trend.icon}</span>
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{trend.label}</span>
             </div>
-            <p className="mt-3 text-[13px] text-slate-200 line-clamp-3">{trend.excerpt}</p>
-            <div className="mt-4 flex items-center justify-between text-[10px] text-slate-500">
-              <span>{trend.source}</span>
-              <span className="material-symbols-outlined text-sm text-slate-600">arrow_forward</span>
+            <p className="text-[13px] text-slate-200 line-clamp-2">{trend.excerpt}</p>
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-[10px] text-slate-500">{trend.source}</span>
+              <span className="material-symbols-outlined !text-sm text-slate-600 group-hover:text-indigo-primary">arrow_forward</span>
             </div>
           </div>
         ))}
@@ -321,135 +362,94 @@ export function InsightsDashboard() {
 
   return (
     <main className="flex flex-col h-full">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="border-b border-slate-border p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-sm font-semibold text-slate-300">Insights</h1>
-              <div className="mt-1 text-xs text-slate-500">
-                Usage and transcription metrics{titleSuffix ? ` - ${titleSuffix}` : ''}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex rounded-lg border border-slate-border bg-slate-panel/60 p-1">
-                {PRESETS.map((option) => {
-                  const active = option.value === preset;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setPreset(option.value)}
-                      className={
-                        active
-                          ? 'rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-100'
-                          : 'rounded-md px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200'
-                      }
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                type="button"
-                disabled={!payload || exporting}
-                onClick={handleExport}
-                className="inline-flex items-center gap-2 rounded-lg bg-indigo-primary px-3 py-2 text-sm font-medium text-slate-100 hover:bg-indigo-600 disabled:opacity-60 disabled:hover:bg-indigo-primary"
-                title={!payload ? 'Load insights to export a report' : 'Export report as JSON'}
-              >
-                <span className="material-symbols-outlined text-lg">{exporting ? 'sync' : 'download'}</span>
-                {exporting ? 'Exporting' : 'Export report'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-auto p-4">
-          {!canLoad ? (
-            <EmptyState />
-          ) : loadState === 'error' && error ? (
-            <ErrorState message={error} onRetry={fetchInsights} />
-          ) : (
-            <div className="space-y-8">
-              <InsightsOverview
-                summary={overviewSummary}
-                query={searchQuery}
-                onQueryChange={setSearchQuery}
-              />
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {loadState === 'loading' || !kpis ? (
-                  <>
-                    <div className="rounded-xl border border-slate-border bg-slate-panel/80 p-4">
-                      <SkeletonBlock className="h-4 w-24" />
-                      <SkeletonBlock className="mt-3 h-8 w-28" />
-                      <SkeletonBlock className="mt-2 h-3 w-32" />
-                    </div>
-                    <div className="rounded-xl border border-slate-border bg-slate-panel/80 p-4">
-                      <SkeletonBlock className="h-4 w-24" />
-                      <SkeletonBlock className="mt-3 h-8 w-28" />
-                      <SkeletonBlock className="mt-2 h-3 w-32" />
-                    </div>
-                    <div className="rounded-xl border border-slate-border bg-slate-panel/80 p-4">
-                      <SkeletonBlock className="h-4 w-24" />
-                      <SkeletonBlock className="mt-3 h-8 w-28" />
-                      <SkeletonBlock className="mt-2 h-3 w-32" />
-                    </div>
-                    <div className="rounded-xl border border-slate-border bg-slate-panel/80 p-4">
-                      <SkeletonBlock className="h-4 w-24" />
-                      <SkeletonBlock className="mt-3 h-8 w-28" />
-                      <SkeletonBlock className="mt-2 h-3 w-32" />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <KpiCard
-                      label="Recordings"
-                      value={kpis.totalRecordings.toLocaleString()}
-                      hint={`${kpis.transcribedRecordings.toLocaleString()} transcribed`}
-                    />
-                    <KpiCard
-                      label="Minutes recorded"
-                      value={formatMinutes(kpis.totalRecordingSeconds)}
-                      hint="Across selected range"
-                    />
-                    <KpiCard
-                      label="Minutes transcribed"
-                      value={formatMinutes(kpis.transcribedSeconds)}
-                      hint={formatPct(kpis.transcriptionCoveragePct) + ' coverage'}
-                    />
-                    <KpiCard
-                      label="Coverage"
-                      value={formatPct(kpis.transcriptionCoveragePct)}
-                      hint="Transcribed minutes / total minutes"
-                    />
-                  </>
-                )}
-              </div>
-
-              {payload ? (
-                <InsightsCharts payload={payload} seriesLabels={seriesLabels} />
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+        {!canLoad ? (
+          <EmptyState />
+        ) : loadState === 'error' && error ? (
+          <ErrorState message={error} onRetry={fetchInsights} />
+        ) : (
+          <div className="space-y-8 pb-8">
+            <InsightsOverview
+              summary={overviewSummary}
+              query={searchQuery}
+              onQueryChange={setSearchQuery}
+              preset={preset}
+              setPreset={setPreset}
+              PRESETS={PRESETS}
+              exporting={exporting}
+              handleExport={handleExport}
+            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 px-8">
+              {loadState === 'loading' || !kpis ? (
+                <>
+                  <div className="rounded-xl border border-slate-border bg-slate-panel/80 p-4">
+                    <SkeletonBlock className="h-4 w-24" />
+                    <SkeletonBlock className="mt-3 h-8 w-28" />
+                    <SkeletonBlock className="mt-2 h-3 w-32" />
+                  </div>
+                  <div className="rounded-xl border border-slate-border bg-slate-panel/80 p-4">
+                    <SkeletonBlock className="h-4 w-24" />
+                    <SkeletonBlock className="mt-3 h-8 w-28" />
+                    <SkeletonBlock className="mt-2 h-3 w-32" />
+                  </div>
+                  <div className="rounded-xl border border-slate-border bg-slate-panel/80 p-4">
+                    <SkeletonBlock className="h-4 w-24" />
+                    <SkeletonBlock className="mt-3 h-8 w-28" />
+                    <SkeletonBlock className="mt-2 h-3 w-32" />
+                  </div>
+                  <div className="rounded-xl border border-slate-border bg-slate-panel/80 p-4">
+                    <SkeletonBlock className="h-4 w-24" />
+                    <SkeletonBlock className="mt-3 h-8 w-28" />
+                    <SkeletonBlock className="mt-2 h-3 w-32" />
+                  </div>
+                </>
               ) : (
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  <div className="h-72 rounded-xl border border-slate-border bg-slate-panel/60 p-4">
-                    <SkeletonBlock className="h-4 w-32" />
-                    <SkeletonBlock className="mt-4 h-48 w-full" />
-                  </div>
-                  <div className="h-56 rounded-xl border border-slate-border bg-slate-panel/60 p-4">
-                    <SkeletonBlock className="h-4 w-32" />
-                    <SkeletonBlock className="mt-4 h-32 w-full" />
-                  </div>
-                </div>
+                <>
+                  <KpiCard
+                    label="Recordings"
+                    value={kpis.totalRecordings.toLocaleString()}
+                    hint={`${kpis.transcribedRecordings.toLocaleString()} transcribed`}
+                  />
+                  <KpiCard
+                    label="Minutes recorded"
+                    value={formatMinutes(kpis.totalRecordingSeconds)}
+                    hint="Across selected range"
+                  />
+                  <KpiCard
+                    label="Minutes transcribed"
+                    value={formatMinutes(kpis.transcribedSeconds)}
+                    hint={formatPct(kpis.transcriptionCoveragePct) + ' coverage'}
+                  />
+                  <KpiCard
+                    label="Coverage"
+                    value={formatPct(kpis.transcriptionCoveragePct)}
+                    hint="Transcribed minutes / total minutes"
+                  />
+                </>
               )}
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <TopicCloud />
-                <TopKeywords />
+            </div>
+
+            {payload ? (
+              <div className="px-8">
+                <InsightsCharts payload={payload} seriesLabels={seriesLabels} />
               </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 px-8">
+                <div className="h-72 rounded-xl border border-slate-border bg-slate-panel/60 p-4">
+                  <SkeletonBlock className="h-4 w-32" />
+                  <SkeletonBlock className="mt-4 h-48 w-full" />
+                </div>
+                <div className="h-56 rounded-xl border border-slate-border bg-slate-panel/60 p-4">
+                  <SkeletonBlock className="h-4 w-32" />
+                  <SkeletonBlock className="mt-4 h-32 w-full" />
+                </div>
+              </div>
+            )}
+            <div className="px-8">
               <RecentTrends />
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <Footer>
@@ -466,4 +466,5 @@ export function InsightsDashboard() {
       </Footer>
     </main>
   );
+
 }
